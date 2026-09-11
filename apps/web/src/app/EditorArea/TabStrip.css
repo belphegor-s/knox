@@ -1,0 +1,85 @@
+.knox-tabstrip {
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  flex-shrink: 0;
+  background: var(--knox-bg-1);
+  border-bottom: 1px solid var(--knox-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.knox-tabstrip::-webkit-scrollbar {
+  display: none;
+}
+.knox-tabstrip--empty {
+  border-bottom: 1px solid var(--knox-border);
+}
+
+.knox-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 12px;
+  min-width: 100px;
+  max-width: 200px;
+  border-right: 1px solid var(--knox-border);
+  color: var(--knox-text-secondary);
+  font-size: 12.5px;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+.knox-tab:hover {
+  background: var(--knox-bg-hover);
+  color: var(--knox-text-primary);
+}
+.knox-tab--active {
+  background: var(--knox-bg-0);
+  color: var(--knox-text-primary);
+}
+.knox-tab--active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: var(--knox-accent);
+}
+.knox-tab--preview .knox-tab__name {
+  font-style: italic;
+}
+
+.knox-tab__name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.knox-tab__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--knox-text-tertiary);
+  flex-shrink: 0;
+}
+.knox-tab--active .knox-tab__dot {
+  background: var(--knox-accent);
+}
+.knox-tab__close {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--knox-text-tertiary);
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.knox-tab__close:hover {
+  background: var(--knox-bg-active);
+  color: var(--knox-text-primary);
+}

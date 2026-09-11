@@ -1,0 +1,95 @@
+@import "./theme.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--knox-bg-0);
+  color: var(--knox-text-primary);
+  font-family: var(--knox-font-ui);
+  font-size: 13px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button,
+[role="button"],
+input,
+select {
+  outline: none;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--knox-accent);
+  outline-offset: 1px;
+  border-radius: var(--knox-radius-sm);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--knox-accent) 30%, transparent);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--knox-bg-active);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--knox-border-strong);
+  background-clip: content-box;
+}
+
+.knox-boot {
+  display: none;
+}
+
+.knox-app-loading {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--knox-text-secondary);
+  font-size: 13px;
+  text-align: center;
+  padding: 0 24px;
+}
+.knox-app-loading--error {
+  color: var(--knox-danger);
+}
+.knox-app-loading p {
+  margin: 0;
+}

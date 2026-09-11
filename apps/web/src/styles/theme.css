@@ -1,0 +1,100 @@
+/**
+ * Design tokens. One neutral scale, one accent (a restrained brass/amber -
+ * distinct from the blue/purple every other dev tool reaches for), applied
+ * consistently rather than per-component ad hoc colors.
+ */
+:root {
+  --knox-accent: #c9a567;
+  --knox-accent-fg: #14110a;
+  --knox-danger: #d9776b;
+  --knox-warning: #d3a54b;
+  --knox-success: #8fb37a;
+  --knox-info: #7fb8c4;
+
+  --knox-radius-sm: 4px;
+  --knox-radius-md: 6px;
+  --knox-font-ui:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
+  --knox-font-mono: ui-monospace, "JetBrains Mono", "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+
+  --knox-motion-fast: 120ms;
+  --knox-motion-base: 180ms;
+  --knox-motion-slow: 280ms;
+  --knox-ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root,
+:root[data-theme="dark"] {
+  --knox-bg-0: #0b0c0e;
+  --knox-bg-1: #0e0f11;
+  --knox-bg-2: #16181b;
+  --knox-bg-3: #1e2023;
+  --knox-bg-hover: #ffffff0a;
+  --knox-bg-active: #ffffff12;
+  --knox-border: #232529;
+  --knox-border-strong: #34373c;
+  --knox-text-primary: #d8dadd;
+  --knox-text-secondary: #8b9099;
+  --knox-text-tertiary: #5c6066;
+  --knox-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --knox-bg-0: #f4f2ef;
+    --knox-bg-1: #fbfaf8;
+    --knox-bg-2: #f0eee9;
+    --knox-bg-3: #e8e5df;
+    --knox-bg-hover: #00000008;
+    --knox-bg-active: #00000012;
+    --knox-border: #e3e0da;
+    --knox-border-strong: #cfccc5;
+    --knox-text-primary: #24262b;
+    --knox-text-secondary: #63666d;
+    --knox-text-tertiary: #96999f;
+    --knox-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    color-scheme: light;
+  }
+}
+
+:root[data-theme="light"] {
+  --knox-bg-0: #f4f2ef;
+  --knox-bg-1: #fbfaf8;
+  --knox-bg-2: #f0eee9;
+  --knox-bg-3: #e8e5df;
+  --knox-bg-hover: #00000008;
+  --knox-bg-active: #00000012;
+  --knox-border: #e3e0da;
+  --knox-border-strong: #cfccc5;
+  --knox-text-primary: #24262b;
+  --knox-text-secondary: #63666d;
+  --knox-text-tertiary: #96999f;
+  --knox-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  color-scheme: light;
+}
+
+:root[data-theme="high-contrast"] {
+  --knox-bg-0: #000000;
+  --knox-bg-1: #000000;
+  --knox-bg-2: #0a0a0a;
+  --knox-bg-3: #141414;
+  --knox-bg-hover: #ffffff1a;
+  --knox-bg-active: #ffffff26;
+  --knox-border: #6b6b6b;
+  --knox-border-strong: #ffffff;
+  --knox-text-primary: #ffffff;
+  --knox-text-secondary: #d9d9d9;
+  --knox-text-tertiary: #b3b3b3;
+  --knox-accent: #ffd166;
+  --knox-shadow: none;
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --knox-motion-fast: 0ms;
+    --knox-motion-base: 0ms;
+    --knox-motion-slow: 0ms;
+  }
+}

@@ -1,0 +1,40 @@
+.knox-titlebar {
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: var(--knox-bg-1);
+  border-bottom: 1px solid var(--knox-border);
+  -webkit-app-region: drag;
+  font-size: 12.5px;
+}
+.knox-titlebar__left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.knox-titlebar__mark {
+  font-weight: 600;
+  color: var(--knox-text-primary);
+}
+.knox-titlebar__sep {
+  color: var(--knox-text-tertiary);
+}
+.knox-titlebar__project {
+  color: var(--knox-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.knox-titlebar__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.knox-titlebar__backend {
+  color: var(--knox-text-tertiary);
+  font-size: 11.5px;
+}
