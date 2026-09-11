@@ -1,0 +1,19 @@
+node_modules
+dist
+dist-ssr
+build
+.turbo
+*.local
+.DS_Store
+.env
+.env.*
+!.env.example
+coverage
+*.tsbuildinfo
+.vite
+playwright-report
+test-results
+pnpm-lock.yaml.bak
+
+# The original product spec, kept locally for reference only - never tracked.
+SPEC.md
