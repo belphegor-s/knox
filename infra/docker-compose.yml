@@ -1,0 +1,38 @@
+# Minimal self-hosted deployment: one static-serving container. Everything
+# Knox needs for local-first editing (filesystem, Git, editor, session
+# persistence) runs entirely in the browser - there is no database or cache
+# to stand up for that. Postgres/Redis/object-storage services are left
+# commented below for when the optional cloud features (sync, collaboration,
+# auth, cloud execution) are built - see docs/cloud-runtime.md.
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    ports:
+      - "${KNOX_PORT:-8080}:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # --- optional, for future cloud features (not required to run Knox) --------
+  # postgres:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_USER: knox
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set a password}
+  #     POSTGRES_DB: knox
+  #   volumes:
+  #     - knox-postgres-data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
+
+# volumes:
+#   knox-postgres-data:
