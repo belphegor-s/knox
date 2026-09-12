@@ -14,6 +14,7 @@ import { StatusBar } from "./StatusBar";
 import { PaletteHost } from "./Palette/PaletteHost";
 import { useLayoutStore } from "../state/layout-store";
 import { useEditorStore } from "../state/editor-store";
+import { useWorkspaceStore } from "../state/workspace-store";
 import { useGitStore } from "../state/git-store";
 import { useSearchStore } from "../state/search-store";
 import { useDragResize } from "../hooks/useDragResize";
@@ -127,7 +128,7 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         id: "file.closeEditor",
         title: "File: Close Editor",
         category: "File",
-        shortcut: "⌘W",
+        shortcut: "⌘⇧W",
         run: () => {
           const { activePath, closeTab } = useEditorStore.getState();
           if (activePath) closeTab(activePath);
@@ -154,6 +155,12 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         category: "View",
         shortcut: "⌘⇧/",
         run: () => setShortcutsHelpOpen(true),
+      },
+      {
+        id: "workspace.goHome",
+        title: "Workspace: Back to Recent Projects",
+        category: "File",
+        run: () => useWorkspaceStore.getState().reset(),
       },
     ]);
   }, [sidebarVisible, panelVisible, aiPanelVisible, toggleTerminalFocus, setSidebarVisible, setPanelVisible, setAiPanelVisible, toggleDistractionFree]);
@@ -182,8 +189,10 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
       } else if (e.key === "`") {
         e.preventDefault();
         void commandRegistry.run("view.toggleTerminal");
-      } else if (key === "w") {
-        // Browsers may reserve plain ⌘W for closing the tab; ⌘⇧W is a guaranteed-safe alternate.
+      } else if (key === "w" && e.shiftKey) {
+        // Plain ⌘W is deliberately NOT bound: Chrome (and most browsers) closes the actual
+        // browser tab on Ctrl/Cmd+W regardless of preventDefault() - there is no way to
+        // intercept it from a page. Binding it would fire our handler AND still lose the tab.
         e.preventDefault();
         void commandRegistry.run("file.closeEditor");
       }

@@ -1,4 +1,5 @@
 import type { WorkspaceMetadata } from "@knox/shared";
+import { useWorkspaceStore } from "../state/workspace-store";
 import "./TitleBar.css";
 
 const BACKEND_LABEL: Record<WorkspaceMetadata["fsBackend"], string> = {
@@ -11,7 +12,13 @@ export function TitleBar({ metadata }: { metadata: WorkspaceMetadata }): React.R
   return (
     <header className="knox-titlebar">
       <div className="knox-titlebar__left">
-        <span className="knox-titlebar__mark">Knox</span>
+        <button
+          className="knox-titlebar__mark"
+          title="Back to recent projects"
+          onClick={() => useWorkspaceStore.getState().reset()}
+        >
+          Knox
+        </button>
         <span className="knox-titlebar__sep">/</span>
         <span className="knox-titlebar__project">{metadata.name}</span>
       </div>

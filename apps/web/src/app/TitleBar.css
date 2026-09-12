@@ -17,8 +17,20 @@
   min-width: 0;
 }
 .knox-titlebar__mark {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: var(--knox-radius-sm);
+  font: inherit;
   font-weight: 600;
   color: var(--knox-text-primary);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+.knox-titlebar__mark:hover {
+  background: var(--knox-bg-hover);
 }
 .knox-titlebar__sep {
   color: var(--knox-text-tertiary);

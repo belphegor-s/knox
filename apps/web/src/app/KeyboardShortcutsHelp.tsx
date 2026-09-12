@@ -29,9 +29,10 @@ export function KeyboardShortcutsHelp({ onClose }: { onClose: () => void }): Rea
             </div>
           ))}
           <p className="knox-shortcuts__note">
-            Browsers reserve some combinations (⌘N, ⌘W, ⌘T) for their own tabs/windows and don't let a page override them
-            reliably in every browser - if one doesn't respond, use the on-screen button instead. Your workspace and open
-            tabs auto-restore on reload either way.
+            Plain ⌘W isn't bound to anything here on purpose: Chrome closes the actual browser tab
+            on Ctrl/Cmd+W no matter what a page does, so binding it would close your editor tab and
+            the browser tab together. Use ⌘⇧W to close an editor tab instead. Your workspace and open
+            tabs auto-restore on reload regardless.
           </p>
         </div>
       </div>
