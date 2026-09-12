@@ -1,6 +1,6 @@
 import { createRpcClient } from "@knox/shared";
 import GitWorker from "./worker.ts?worker";
-import type { GitAuth, GitAuthor, GitBranchInfo, GitCommitInfo, GitDiffHunk, GitFileStatus } from "./types.js";
+import type { GitAuth, GitAuthor, GitBranchInfo, GitCommitInfo, GitDiffHunk, GitFileStatus, GitRemoteInfo } from "./types.js";
 
 interface GitRpcApi {
   [method: string]: (...args: any[]) => Promise<any>;
@@ -19,10 +19,13 @@ interface GitRpcApi {
   checkout(ref: string): Promise<void>;
   log(depth?: number): Promise<GitCommitInfo[]>;
   diffFile(path: string): Promise<GitDiffHunk[]>;
-  fetch(opts?: { corsProxy?: string }): Promise<void>;
-  pull(author?: GitAuthor, opts?: { corsProxy?: string }): Promise<void>;
+  fetch(opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void>;
+  pull(author?: GitAuthor, opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void>;
   push(opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void>;
   merge(theirs: string, author?: GitAuthor): Promise<{ conflicted: boolean }>;
+  listRemotes(): Promise<GitRemoteInfo[]>;
+  addRemote(remote: string, url: string): Promise<void>;
+  deleteRemote(remote: string): Promise<void>;
 }
 
 /** Main-thread handle to the Git worker; every call round-trips off the UI thread. */
@@ -53,10 +56,13 @@ export class GitClient {
   checkout = (ref: string): Promise<void> => this.api.checkout(ref);
   log = (depth?: number): Promise<GitCommitInfo[]> => this.api.log(depth);
   diffFile = (path: string): Promise<GitDiffHunk[]> => this.api.diffFile(path);
-  fetch = (opts?: { corsProxy?: string }): Promise<void> => this.api.fetch(opts);
-  pull = (author?: GitAuthor, opts?: { corsProxy?: string }): Promise<void> => this.api.pull(author, opts);
+  fetch = (opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void> => this.api.fetch(opts);
+  pull = (author?: GitAuthor, opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void> => this.api.pull(author, opts);
   push = (opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void> => this.api.push(opts);
   merge = (theirs: string, author?: GitAuthor): Promise<{ conflicted: boolean }> => this.api.merge(theirs, author);
+  listRemotes = (): Promise<GitRemoteInfo[]> => this.api.listRemotes();
+  addRemote = (remote: string, url: string): Promise<void> => this.api.addRemote(remote, url);
+  deleteRemote = (remote: string): Promise<void> => this.api.deleteRemote(remote);
 
   dispose(): void {
     this.worker.terminate();

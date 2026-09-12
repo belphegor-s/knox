@@ -33,3 +33,8 @@ export interface GitAuth {
   username: string;
   password: string;
 }
+
+export interface GitRemoteInfo {
+  remote: string;
+  url: string;
+}

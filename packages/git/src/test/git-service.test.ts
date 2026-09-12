@@ -12,6 +12,14 @@ async function freshRepo(): Promise<{ vfs: IndexedDbFileSystem; git: GitService 
 }
 
 describe("GitService", () => {
+  it("reports isRepo true even with zero commits", async () => {
+    // A freshly-initialized repo has a symbolic HEAD pointing at refs/heads/main, but that
+    // ref has no object until the first commit - resolving it throws, so isRepo() must not
+    // rely on ref resolution or every repo looks uninitialized until its first commit.
+    const { git } = await freshRepo();
+    expect(await git.isRepo()).toBe(true);
+  });
+
   it("reports untracked files before any add", async () => {
     const { vfs, git } = await freshRepo();
     await vfs.writeFile("/a.txt", "hello");

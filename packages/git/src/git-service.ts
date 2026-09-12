@@ -3,7 +3,7 @@ import http from "isomorphic-git/http/web";
 import { diffLines } from "diff";
 import type { VirtualFileSystem } from "@knox/shared";
 import { createGitFs } from "./fs-adapter.js";
-import type { GitAuth, GitAuthor, GitBranchInfo, GitCommitInfo, GitDiffHunk, GitFileStatus, GitFileStatusCode } from "./types.js";
+import type { GitAuth, GitAuthor, GitBranchInfo, GitCommitInfo, GitDiffHunk, GitFileStatus, GitFileStatusCode, GitRemoteInfo } from "./types.js";
 
 const DEFAULT_AUTHOR: GitAuthor = { name: "Knox User", email: "user@knox.local" };
 
@@ -25,9 +25,18 @@ export class GitService {
   }
 
   async isRepo(): Promise<boolean> {
+    // Deliberately NOT git.resolveRef({ref: "HEAD"}): on a freshly-initialized repo with
+    // zero commits, HEAD is a symbolic ref pointing at refs/heads/<default>, but that ref
+    // has no object yet, so resolveRef throws - which made a genuinely-initialized repo
+    // look uninitialized (and offer to re-init, discarding nothing on disk but hiding the
+    // real state) every time the app reloaded before the first commit. Checking for the
+    // .git directory itself matches what every other Git tool means by "is a repo".
     try {
-      await git.resolveRef({ fs: this.fs, dir: this.dir, ref: "HEAD" });
-      return true;
+      // Absolute path, not relative: IndexedDbFileSystem keys entries by the fully
+      // normalized path, so "/.git" and ".git" are different (missing) keys to it, even
+      // though the OPFS backend's segment-walk happens to not care about the difference.
+      const stat = await this.fs.promises.stat("/.git");
+      return stat.isDirectory();
     } catch {
       return false;
     }
@@ -138,12 +147,24 @@ export class GitService {
     }));
   }
 
-  async fetch(opts?: { corsProxy?: string }): Promise<void> {
-    await git.fetch({ fs: this.fs, http, dir: this.dir, corsProxy: opts?.corsProxy });
+  async listRemotes(): Promise<GitRemoteInfo[]> {
+    return git.listRemotes({ fs: this.fs, dir: this.dir });
   }
 
-  async pull(author: GitAuthor = DEFAULT_AUTHOR, opts?: { corsProxy?: string }): Promise<void> {
-    await git.pull({ fs: this.fs, http, dir: this.dir, author, corsProxy: opts?.corsProxy });
+  async addRemote(remote: string, url: string): Promise<void> {
+    await git.addRemote({ fs: this.fs, dir: this.dir, remote, url, force: true });
+  }
+
+  async deleteRemote(remote: string): Promise<void> {
+    await git.deleteRemote({ fs: this.fs, dir: this.dir, remote });
+  }
+
+  async fetch(opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void> {
+    await git.fetch({ fs: this.fs, http, dir: this.dir, corsProxy: opts?.corsProxy, onAuth: opts?.auth ? () => opts.auth! : undefined });
+  }
+
+  async pull(author: GitAuthor = DEFAULT_AUTHOR, opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void> {
+    await git.pull({ fs: this.fs, http, dir: this.dir, author, corsProxy: opts?.corsProxy, onAuth: opts?.auth ? () => opts.auth! : undefined });
   }
 
   async push(opts?: { corsProxy?: string; auth?: GitAuth }): Promise<void> {

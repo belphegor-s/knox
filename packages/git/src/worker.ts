@@ -34,8 +34,11 @@ exposeRpc({
   checkout: (ref: string) => service.checkout(ref),
   log: (depth?: number) => service.log(depth),
   diffFile: (path: string) => service.diffFile(path, vfs),
-  fetch: (opts?: { corsProxy?: string }) => service.fetch(opts),
-  pull: (author?: GitAuthor, opts?: { corsProxy?: string }) => service.pull(author, opts),
+  fetch: (opts?: { corsProxy?: string; auth?: GitAuth }) => service.fetch(opts),
+  pull: (author?: GitAuthor, opts?: { corsProxy?: string; auth?: GitAuth }) => service.pull(author, opts),
   push: (opts?: { corsProxy?: string; auth?: GitAuth }) => service.push(opts),
   merge: (theirs: string, author?: GitAuthor) => service.merge(theirs, author),
+  listRemotes: () => service.listRemotes(),
+  addRemote: (remote: string, url: string) => service.addRemote(remote, url),
+  deleteRemote: (remote: string) => service.deleteRemote(remote),
 });
