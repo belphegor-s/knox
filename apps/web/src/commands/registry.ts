@@ -10,13 +10,7 @@ export interface Command {
   when?: () => boolean;
 }
 
-/**
- * Global command registry (SPEC section 25/55): every feature exposes its
- * actions here instead of wiring them only to a toolbar icon, so the
- * command palette, keyboard shortcuts, and any future extension API all
- * share one source of truth. Modules register on mount via
- * `useRegisterCommands` and are automatically unregistered on unmount.
- */
+// Single source of truth for every app action; the palette, shortcuts, and future extensions all read from here.
 class CommandRegistry {
   private readonly commands = new Map<string, Command>();
   private listeners = new Set<() => void>();

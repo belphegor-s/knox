@@ -1,8 +1,4 @@
-/**
- * Minimal glob matcher supporting `*`, `**`, `?`, and character classes -
- * enough for search include/exclude and .gitignore-style rules without
- * pulling in a dependency.
- */
+// Supports *, **, ?, and character classes - no dependency needed.
 export function globToRegExp(pattern: string): RegExp {
   let out = "";
   let i = 0;

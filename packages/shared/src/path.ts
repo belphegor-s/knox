@@ -1,9 +1,4 @@
-/**
- * POSIX-style path helpers. Every path in Knox is workspace-relative and
- * "/"-separated regardless of host OS - implementations must never call
- * into Node's `path` module (browser + worker only).
- */
-
+// POSIX-style paths only; never use Node's `path` module here.
 export function normalizePath(path: string): string {
   if (!path || path === "/") return "/";
   const isAbsolute = path.startsWith("/");
@@ -45,8 +40,6 @@ export function extname(path: string): string {
 
 export function isValidFileName(name: string): boolean {
   if (!name || name === "." || name === "..") return false;
-  // Reject control chars and characters invalid across Windows/macOS/Linux
-  // filesystems so the same project stays portable.
   if (/[<>:"|?*\x00-\x1f]/.test(name)) return false;
   if (name.endsWith(" ") || name.endsWith(".")) return false;
   return true;

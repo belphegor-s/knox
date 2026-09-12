@@ -28,13 +28,7 @@ export interface KnoxEditorProps {
   onSaveRequested?: () => void;
 }
 
-/**
- * Thin, imperative React wrapper around Monaco. Deliberately not a
- * "controlled" component (value prop re-applied on every render) - Monaco
- * owns the buffer once mounted, and we read/write it through refs and the
- * module-level model registry, which is what keeps keystroke latency off
- * the React render cycle entirely.
- */
+// Imperative, not controlled: Monaco owns the buffer, keeping keystrokes off React's render cycle.
 export const KnoxEditor = forwardRef<KnoxEditorHandle, KnoxEditorProps>(function KnoxEditor(props, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -94,8 +88,7 @@ export const KnoxEditor = forwardRef<KnoxEditorHandle, KnoxEditorProps>(function
     // eslint-disable-next-line react-hooks/exhaustive-deps -- editor is created once; path swaps handled below
   }, []);
 
-  // Swap the model when `path` changes, reusing a cached model so undo
-  // history and scroll position survive switching tabs.
+  // swap model on path change; registry caches it so undo history survives tab switches
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor) return;

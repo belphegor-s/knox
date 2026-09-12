@@ -2,12 +2,6 @@ import type { Disposable } from "./disposable.js";
 
 type Listener<T> = (payload: T) => void;
 
-/**
- * A tiny typed pub/sub primitive. Every cross-subsystem signal in Knox
- * (FILE_CHANGED, GIT_STATUS_CHANGED, RUNTIME_STARTED, ...) flows through one
- * of these rather than through React state, so non-UI code (workers, the
- * filesystem layer, git) never depends on React being mounted.
- */
 export class Emitter<T = void> {
   private listeners: Set<Listener<T>> | null = null;
 

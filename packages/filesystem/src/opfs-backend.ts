@@ -1,11 +1,6 @@
 import { FileSystemHandleBackend } from "./handle-fs.js";
 
-/**
- * OPFS-backed VirtualFileSystem - the primary backend (SPEC section 5).
- * Uses the async OPFS API (createWritable) so it works identically from
- * the main thread and from workers, rather than sync access handles
- * (worker-only, faster but narrower support).
- */
+// Primary VirtualFileSystem backend; async API works from both main thread and workers.
 export class OpfsFileSystem extends FileSystemHandleBackend {
   static async isSupported(): Promise<boolean> {
     try {

@@ -8,12 +8,7 @@ import {
   type WorkspaceSettings,
 } from "@knox/shared";
 
-/**
- * Local persistence for workspace metadata, session (open tabs, cursor
- * positions, layout) and settings - SPEC section 6. Deliberately separate
- * from file *contents* (which live in the VirtualFileSystem backend) so a
- * corrupted session never risks project data, and vice versa.
- */
+// Session/settings metadata only - file contents live in the VirtualFileSystem backend, kept separate.
 const DB_NAME = "knox-app";
 const DB_VERSION = 1;
 const WORKSPACES = "workspaces";
@@ -28,16 +23,12 @@ function getDb(): Promise<IDBDatabase> {
     db.createObjectStore(WORKSPACES, { keyPath: "id" });
     db.createObjectStore(SESSIONS, { keyPath: "workspaceId" });
     db.createObjectStore(SETTINGS, { keyPath: "workspaceId" });
-    // Chromium-family browsers support storing FileSystemDirectoryHandle
-    // via structured clone; Firefox/Safari don't expose the picker at all
-    // (gated by FileSystemAccessBackend.isSupported()), so this store is
-    // simply unused there.
+    // unused on Firefox/Safari - no directory picker there
     db.createObjectStore(DIRECTORY_HANDLES, { keyPath: "workspaceId" });
   });
   return dbPromise;
 }
 
-/** Persists the user-granted directory handle so it can be re-requested on reload (SPEC section 5). */
 export async function saveDirectoryHandle(workspaceId: string, handle: FileSystemDirectoryHandle): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(DIRECTORY_HANDLES, "readwrite");

@@ -1,15 +1,7 @@
 import * as monaco from "monaco-editor";
 import { languageForPath } from "./languages.js";
 
-/**
- * One Monaco text model per open path, reused across tab switches so undo
- * history and view state survive switching away and back - recreating the
- * model on every tab click is a common cause of "editor feels laggy".
- *
- * Also tracks each model's "saved" version marker (Monaco's alternative
- * version id) so dirty state is computed from Monaco's own undo stack
- * rather than string-diffing buffers on every keystroke.
- */
+// One Monaco model per path (reused across tab switches); dirty state via Monaco's own version id, not string diffing.
 class ModelRegistry {
   private readonly models = new Map<string, monaco.editor.ITextModel>();
   private readonly savedVersion = new Map<string, number>();

@@ -1,9 +1,3 @@
-/**
- * The canonical set of cross-subsystem event names (SPEC section 57).
- * Payload types live next to each name so producers/consumers stay in sync
- * without importing each other's internals.
- */
-
 import type { FileChangeEvent } from "./vfs.js";
 
 export interface WorkspaceLoadedPayload {

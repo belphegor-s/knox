@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-/** Tracks an element's content box size via ResizeObserver - used to feed real virtualized lists (react-window) their viewport dimensions. */
 export function useElementSize<T extends HTMLElement>(): [React.RefObject<T>, { width: number; height: number }] {
   const ref = useRef<T>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });

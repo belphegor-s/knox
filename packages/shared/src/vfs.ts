@@ -1,16 +1,6 @@
 import type { Disposable } from "./disposable.js";
 
-/**
- * Filesystem contract implemented by every backend (OPFS, IndexedDB fallback,
- * File System Access API, and - later - a remote/cloud-synced backend).
- * Nothing above this layer (editor, search, git, terminal) is allowed to
- * know which backend is active; see packages/filesystem for implementations
- * and docs/architecture.md for why this boundary exists.
- *
- * All paths are POSIX-style, absolute from the workspace root ("/"), using
- * "/" separators regardless of host OS.
- */
-
+// Filesystem contract implemented by every backend; paths are POSIX-style, absolute from "/".
 export type FileType = "file" | "directory" | "symlink" | "unknown";
 
 export interface FileStat {
@@ -91,11 +81,7 @@ export class FileSystemError extends Error {
   }
 }
 
-/**
- * The abstraction every subsystem programs against. Implementations must
- * never load an entire project into memory and must support workspaces with
- * 100k+ files - see docs/performance.md.
- */
+// Must never load an entire project into memory; must scale to 100k+ files.
 export interface VirtualFileSystem {
   readonly id: string;
 

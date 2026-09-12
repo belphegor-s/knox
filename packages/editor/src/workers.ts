@@ -1,7 +1,4 @@
-// Vite's `?worker` import suffix turns each of these into a Worker
-// constructor bundled as a separate chunk - Monaco's language services
-// (SPEC section 8: "must never run on the main UI thread") each get their
-// own worker instead of sharing the UI thread.
+// `?worker` turns each import into its own Worker chunk.
 import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import CssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker";
@@ -10,7 +7,7 @@ import TsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
 
 let installed = false;
 
-/** Call once before the first `monaco.editor.create`. Idempotent. */
+// idempotent - call once before the first monaco.editor.create
 export function installMonacoWorkers(): void {
   if (installed) return;
   installed = true;

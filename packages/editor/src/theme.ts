@@ -1,11 +1,5 @@
 import * as monaco from "monaco-editor";
 
-/**
- * Knox's two editor themes. Restrained palette, one accent - see
- * docs/architecture.md "visual identity". Token colors are deliberately
- * desaturated; the accent is reserved for interactive/selection state so it
- * doesn't compete with syntax color for attention.
- */
 export function defineKnoxThemes(): void {
   monaco.editor.defineTheme("knox-dark", {
     base: "vs-dark",

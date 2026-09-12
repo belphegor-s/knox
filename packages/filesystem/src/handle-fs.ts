@@ -43,16 +43,8 @@ function mapDomError(err: unknown, path: string): FileSystemError {
   }
 }
 
-/**
- * Shared implementation for any backend rooted at a FileSystemDirectoryHandle
- * - both OPFS (packages/filesystem/opfs-backend.ts) and user-selected
- * directories via the File System Access API (fsa-backend.ts) are the same
- * tree-walking logic over a different root handle.
- *
- * Known limitation shared by both: neither OPFS nor FSA exposes a native
- * cross-tab change-notification API, so `watch()` only observes writes made
- * through *this* instance. Documented in docs/local-runtime.md.
- */
+// Shared tree-walking logic for any backend rooted at a FileSystemDirectoryHandle (OPFS, FSA).
+// watch() only sees writes made through this instance - no native cross-tab notification exists.
 export abstract class FileSystemHandleBackend implements VirtualFileSystem {
   protected readonly changeEmitter = new Emitter<FileChangeEvent>();
 
@@ -111,9 +103,7 @@ export abstract class FileSystemHandleBackend implements VirtualFileSystem {
     const writable = await handle.createWritable();
     try {
       const bytes = typeof data === "string" ? textEncoder.encode(data) : data;
-      // Uint8Array's `buffer` is typed as ArrayBufferLike (may include
-      // SharedArrayBuffer), which the FS Access API's typings don't accept
-      // even though browsers do; the cast reflects an over-strict lib type.
+      // cast: lib types are stricter here than what browsers actually accept
       await writable.write(bytes as unknown as BufferSource);
     } finally {
       await writable.close();

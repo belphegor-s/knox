@@ -13,11 +13,7 @@ export function App(): React.ReactElement {
 
   useEffect(() => startSessionAutosave(), []);
 
-  // Restore the previous session automatically (SPEC section 2/6): if a
-  // workspace was open before reload/crash, reopen it instead of showing
-  // Welcome. File-System-Access-backed workspaces may still fail here since
-  // some browsers require a user gesture to re-grant permission - that's a
-  // real platform constraint, surfaced honestly via the error state below.
+  // Auto-restore last workspace; FSA-backed ones may fail without a fresh permission gesture.
   useEffect(() => {
     let cancelled = false;
     void listRecentWorkspaces().then((recent) => {

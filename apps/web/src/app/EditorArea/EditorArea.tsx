@@ -6,9 +6,7 @@ import { useFileBuffer } from "./useFileBuffer";
 import { TabStrip } from "./TabStrip";
 import "./EditorArea.css";
 
-// Monaco is ~5MB - keep it out of the initial bundle (SPEC section 61: lazy-load, don't init everything at startup).
-// This is the *only* place "@knox/editor/monaco" may be imported statically-adjacent;
-// everywhere else must use the lightweight "@knox/editor" entry point.
+// Only import "@knox/editor/monaco" here - keeps the ~5MB editor out of the initial bundle.
 const KnoxEditor = lazy(() => import("@knox/editor/monaco").then((m) => ({ default: m.KnoxEditor })));
 
 function formatBytes(n: number): string {

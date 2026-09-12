@@ -2,7 +2,7 @@ import { useCallback, useRef } from "react";
 
 interface DragResizeOptions {
   axis: "x" | "y";
-  /** Positive drag direction that should *increase* the size - "start" (up/left) or "end" (down/right). */
+  // "start" = dragging up/left grows it; "end" = dragging down/right grows it
   grows: "start" | "end";
   value: number;
   min: number;
@@ -10,7 +10,6 @@ interface DragResizeOptions {
   onChange: (next: number) => void;
 }
 
-/** Shared drag-to-resize logic for sidebar/AI-panel/bottom-panel splitters (SPEC section 28: panels must be resizable). */
 export function useDragResize({ axis, grows, value, min, max, onChange }: DragResizeOptions): {
   onPointerDown: (e: React.PointerEvent) => void;
 } {

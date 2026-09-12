@@ -3,12 +3,7 @@ import { joinPath } from "@knox/shared";
 
 const DEFAULT_EXCLUDES = new Set(["node_modules", ".git", "dist", "build", ".cache"]);
 
-/**
- * Best-effort recursive file listing for Quick Open, capped so an
- * accidental huge workspace can't hang the UI. This is a stopgap - the
- * indexed, incremental search package (SPEC section 24) replaces this with
- * a worker-maintained index; until then, quick-open does an on-demand scan.
- */
+// Capped recursive scan for Quick Open; stopgap until the indexed search package lands.
 export async function listAllFiles(fs: VirtualFileSystem, maxResults = 20_000): Promise<string[]> {
   const results: string[] = [];
 

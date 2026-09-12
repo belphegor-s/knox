@@ -14,12 +14,7 @@ interface WorkspaceState {
   reset(): void;
 }
 
-/**
- * Runtime workspace state - the *active* filesystem instance and metadata.
- * Deliberately holds a live VirtualFileSystem reference (not serializable
- * data) so components call fs.readFile/writeFile directly rather than
- * round-tripping through Redux-style actions for every keystroke.
- */
+// Holds the live VirtualFileSystem instance directly, not serialized state.
 export const useWorkspaceStore = create<WorkspaceState>((set) => ({
   phase: "none",
   metadata: null,

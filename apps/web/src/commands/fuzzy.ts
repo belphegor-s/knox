@@ -4,11 +4,7 @@ export interface FuzzyMatch<T> {
   indices: number[];
 }
 
-/**
- * Small subsequence-based fuzzy matcher (no dependency - good enough for
- * hundreds to a few thousand candidates, which covers the command list and
- * quick-open until the indexed search package lands).
- */
+// Subsequence-based match, no dependency needed.
 export function fuzzyMatch(query: string, text: string): { score: number; indices: number[] } | null {
   if (!query) return { score: 0, indices: [] };
   const q = query.toLowerCase();

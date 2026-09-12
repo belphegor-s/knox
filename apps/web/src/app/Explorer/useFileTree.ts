@@ -19,12 +19,7 @@ interface TreeState {
 
 const INITIAL_STATE: TreeState = { expanded: new Set(["/"]), children: new Map(), loading: new Set() };
 
-/**
- * Lazily-loaded, flattened file tree: directories are only `readdir`'d when
- * expanded, and the visible row list is a flat array so it can go straight
- * into a virtualized list (SPEC section 34 - must not recursively render
- * everything for 100k-file repos).
- */
+// Lazy, flattened tree: readdir only on expand, flat rows feed straight into a virtualized list.
 export function useFileTree(fs: VirtualFileSystem | null): {
   rows: TreeRow[];
   toggle: (path: string) => void;
@@ -32,10 +27,7 @@ export function useFileTree(fs: VirtualFileSystem | null): {
   isExpanded: (path: string) => boolean;
 } {
   const [state, setState] = useState<TreeState>(INITIAL_STATE);
-  // Mirrors `state` for reads inside callbacks/effects, so we never need to
-  // perform side effects (fetching) from inside a setState updater - updater
-  // functions can run more than once (React StrictMode, concurrent
-  // rendering) and must stay pure.
+  // mirror for reads in callbacks; setState updaters must stay pure (no fetching)
   const stateRef = useRef(state);
   stateRef.current = state;
 

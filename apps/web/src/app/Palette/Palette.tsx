@@ -11,17 +11,13 @@ export interface PaletteItem {
 interface PaletteProps {
   title: string;
   placeholder: string;
-  /** Recomputed on every keystroke; keep cheap or memoize upstream for large item sets. */
+  // recomputed every keystroke - keep cheap or memoize upstream
   search: (query: string) => PaletteItem[];
   onClose: () => void;
   emptyMessage?: string;
 }
 
-/**
- * Shared modal shell for the Command Palette and Quick Open (SPEC section
- * 25/26) - a single accessible, keyboard-navigable "type to find, enter to
- * run" list with a focus trap, reused wherever Knox needs that interaction.
- */
+// Shared modal shell for the Command Palette and Quick Open.
 export function Palette({ title, placeholder, search, onClose, emptyMessage }: PaletteProps): React.ReactElement {
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);

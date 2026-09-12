@@ -1,15 +1,4 @@
-/**
- * Extension → Monaco language id, plus what level of intelligence that
- * language actually gets today. Architected so adding a language means
- * adding one entry here, not touching the editor core (SPEC section 7).
- *
- * `intelligence` is honest about capability (SPEC section 8/93):
- *  - "full": real language service (diagnostics, completions, go-to-def) -
- *    currently TS/JS/JSON via Monaco's bundled TypeScript worker.
- *  - "syntax": tokenizing/highlighting/bracket-matching only, via Monaco's
- *    built-in Monarch grammar - no semantic analysis.
- *  - "none": plain text.
- */
+// "full" = real language service; "syntax" = highlighting only; "none" = plain text.
 export type IntelligenceLevel = "full" | "syntax" | "none";
 
 export interface LanguageDescriptor {

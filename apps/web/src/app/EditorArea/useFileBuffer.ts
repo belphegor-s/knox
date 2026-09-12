@@ -23,7 +23,6 @@ function looksBinary(bytes: Uint8Array): boolean {
   return false;
 }
 
-/** Loads a file's content for the editor, classifying it (text/binary/image/too-large) before ever touching Monaco (SPEC section 33/5). */
 export function useFileBuffer(fs: VirtualFileSystem | null, path: string | null): FileBuffer {
   const [buffer, setBuffer] = useState<FileBuffer>({
     status: "loading",

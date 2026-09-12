@@ -1,11 +1,6 @@
 import { create } from "zustand";
 import type { PanelLayout } from "@knox/shared";
 
-/**
- * Ephemeral + persisted layout state (SPEC section 56: kept separate from
- * filesystem/editor/git state so resizing a panel never triggers editor
- * rerenders). Hydrated from the saved session on workspace load.
- */
 interface LayoutState extends PanelLayout {
   distractionFree: boolean;
   setSidebarVisible(visible: boolean): void;

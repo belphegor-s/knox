@@ -2,10 +2,6 @@ import { Emitter } from "./emitter.js";
 import type { Disposable } from "./disposable.js";
 import type { KnoxEventMap, KnoxEventName } from "./events.js";
 
-/**
- * Process-wide typed event bus. One instance lives on `window` (main thread)
- * and workers relay through their RPC channel - see packages/runtime.
- */
 export class KnoxEventBus {
   private readonly emitters = new Map<KnoxEventName, Emitter<unknown>>();
 

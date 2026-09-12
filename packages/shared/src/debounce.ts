@@ -1,8 +1,4 @@
-/**
- * Trailing-edge debounce with an explicit `flush()` so callers (autosave,
- * session persistence) can force a pending write through before something
- * that must observe it, e.g. tab close.
- */
+// Trailing-edge debounce; flush() forces a pending call through immediately.
 export interface Debounced<Args extends unknown[]> {
   (...args: Args): void;
   flush(): void;

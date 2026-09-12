@@ -9,11 +9,6 @@ import { listAllFiles } from "../../services/file-index";
 
 type Mode = "none" | "commands" | "files";
 
-/**
- * Owns the global shortcuts for Command Palette (⌘K / ⌘⇧P) and Quick Open
- * (⌘P), and renders whichever is active. A single host keeps the shortcut
- * wiring in one place instead of scattered across components.
- */
 export function PaletteHost(): React.ReactElement | null {
   const [mode, setMode] = useState<Mode>("none");
   const fs = useWorkspaceStore((s) => s.fs);

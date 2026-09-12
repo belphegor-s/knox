@@ -9,3 +9,4 @@ export * from "./path.js";
 export * from "./id.js";
 export * from "./idb.js";
 export * from "./debounce.js";
+export * from "./rpc.js";

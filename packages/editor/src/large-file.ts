@@ -1,11 +1,6 @@
 import type * as monaco from "monaco-editor";
 
-/**
- * Large-file behavior thresholds (SPEC section 33). Monaco itself can load
- * multi-MB files, but tokenization, minimap, and bracket-pair colorization
- * get expensive well before the browser tab dies - so we degrade well
- * before that point instead of freezing on a 40MB log file.
- */
+// Degrade well before Monaco actually struggles, not after.
 export const LARGE_FILE_THRESHOLD_BYTES = 2 * 1024 * 1024; // 2MB: disable expensive features
 export const HUGE_FILE_THRESHOLD_BYTES = 20 * 1024 * 1024; // 20MB: warn, offer plain-text mode
 export const MAX_OPENABLE_BYTES = 100 * 1024 * 1024; // 100MB: refuse, explain why
@@ -19,7 +14,6 @@ export function classifyFileSize(bytes: number): FileSizeTier {
   return "normal";
 }
 
-/** Editor options tuned down as file size grows, so typing stays under 16ms. */
 export function editorOptionsForSize(bytes: number): monaco.editor.IStandaloneEditorConstructionOptions {
   const tier = classifyFileSize(bytes);
   if (tier === "normal") return {};

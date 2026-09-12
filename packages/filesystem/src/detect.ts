@@ -1,8 +1,4 @@
-/**
- * Capability detection for filesystem backends. Nothing here throws -
- * unsupported means "false", and callers must degrade gracefully
- * (SPEC section 93).
- */
+// Never throws; unsupported just means false, callers must degrade gracefully.
 export interface FsCapabilities {
   opfs: boolean;
   fileSystemAccess: boolean;

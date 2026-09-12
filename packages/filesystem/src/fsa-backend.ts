@@ -1,12 +1,6 @@
 import { FileSystemHandleBackend } from "./handle-fs.js";
 
-/**
- * File System Access API backend - lets a user open a real folder on disk
- * (SPEC section 5, "Optional user-selected directories"). Requires an
- * explicit user gesture to pick the directory and a permission grant that
- * must be re-verified on reload (browsers do not persist "granted" across
- * sessions without re-confirmation).
- */
+// Lets a user open a real folder on disk; permission must be re-verified on reload.
 export class FileSystemAccessBackend extends FileSystemHandleBackend {
   private constructor(
     workspaceId: string,

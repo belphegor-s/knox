@@ -1,9 +1,3 @@
-/**
- * Thin promise wrapper around IndexedDB - intentionally dependency-free
- * since this sits on the critical path for the fallback filesystem backend
- * and the persistence layer (packages "filesystem" and the web app's
- * session store both use it).
- */
 export function openDb(name: string, version: number, upgrade: (db: IDBDatabase, oldVersion: number) => void): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(name, version);

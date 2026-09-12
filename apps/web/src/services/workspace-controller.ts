@@ -38,7 +38,7 @@ export async function createWorkspace(name: string): Promise<WorkspaceMetadata> 
   return metadata;
 }
 
-/** Opens a real folder on disk via the File System Access API. Must be called from a user gesture. */
+// must be called from a user gesture
 export async function createWorkspaceFromDirectory(): Promise<WorkspaceMetadata> {
   const backend = await FileSystemAccessBackend.pickDirectory(createId("ws"));
   const now = Date.now();
@@ -108,11 +108,7 @@ export async function deleteWorkspace(id: string): Promise<void> {
   await store.deleteWorkspaceMeta(id);
 }
 
-/**
- * Debounced, batched autosave of session state (open tabs, cursor
- * positions, layout) - SPEC section 6: "never write on every keystroke".
- * Call once at app startup; safe to call multiple times (idempotent).
- */
+// Debounced session autosave; idempotent, call once at startup.
 export function startSessionAutosave(): () => void {
   let timer: ReturnType<typeof setTimeout> | null = null;
   const flush = () => {
