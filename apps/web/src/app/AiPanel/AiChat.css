@@ -1,0 +1,110 @@
+.knox-aichat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.knox-aichat__thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.knox-aichat__empty {
+  color: var(--knox-text-tertiary);
+  font-size: 12px;
+  text-align: center;
+  margin-top: 20px;
+}
+.knox-aichat__message {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.knox-aichat__role {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--knox-text-tertiary);
+  margin-bottom: 2px;
+}
+.knox-aichat__message--user .knox-aichat__role {
+  color: var(--knox-accent);
+}
+.knox-aichat__content {
+  white-space: pre-wrap;
+  color: var(--knox-text-primary);
+  word-break: break-word;
+}
+.knox-aichat__error {
+  margin: 0 10px 8px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--knox-danger) 40%, var(--knox-border));
+  border-radius: var(--knox-radius-sm);
+  background: color-mix(in srgb, var(--knox-danger) 8%, transparent);
+  color: var(--knox-danger);
+  font-size: 11.5px;
+}
+.knox-aichat__context {
+  margin: 0 10px 8px;
+  font-size: 11px;
+}
+.knox-aichat__context-toggle {
+  appearance: none;
+  border: 1px solid var(--knox-border);
+  background: var(--knox-bg-2);
+  color: var(--knox-text-secondary);
+  border-radius: var(--knox-radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.knox-aichat__context-detail {
+  padding: 6px 8px;
+  color: var(--knox-text-tertiary);
+  border: 1px solid var(--knox-border);
+  border-top: none;
+  border-radius: 0 0 var(--knox-radius-sm) var(--knox-radius-sm);
+}
+.knox-aichat__context-reason {
+  color: var(--knox-text-tertiary);
+}
+.knox-aichat__composer {
+  border-top: 1px solid var(--knox-border);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.knox-aichat__composer textarea {
+  resize: vertical;
+  min-height: 56px;
+  background: var(--knox-bg-2);
+  border: 1px solid var(--knox-border);
+  border-radius: var(--knox-radius-sm);
+  color: var(--knox-text-primary);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 7px 9px;
+}
+.knox-aichat__composer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.knox-aichat__composer-actions button {
+  appearance: none;
+  border: 1px solid var(--knox-border);
+  background: var(--knox-bg-2);
+  color: var(--knox-text-primary);
+  border-radius: var(--knox-radius-sm);
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.knox-aichat__composer-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
