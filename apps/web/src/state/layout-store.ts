@@ -51,7 +51,11 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
   lastExpandedPanelHeight: Math.max(DEFAULT_LAYOUT.panelHeight, PANEL_EXPANDED_MIN_HEIGHT),
   setSidebarVisible: (visible) => set({ sidebarVisible: visible }),
   setSidebarWidth: (width) => set({ sidebarWidth: Math.round(width) }),
-  setPanelVisible: (visible) => set({ panelVisible: visible }),
+  // Closing (visible: false, the panel's own X button) also exits maximize - otherwise a
+  // maximized panel closed via X and reopened later (toggleTerminalFocus, Cmd+J) silently came
+  // back fullscreen with no indication that was going to happen, since nothing else on the
+  // reopen path knew to check panelMaximized.
+  setPanelVisible: (visible) => set((s) => ({ panelVisible: visible, panelMaximized: visible ? s.panelMaximized : false })),
   // Deliberately has NO side effect on lastExpandedPanelHeight - it fires on every pointer-move
   // frame during a live drag (BottomPanel.tsx's onChange), including every value on the way
   // down to fully collapsed. Updating lastExpandedPanelHeight here ends up recording wherever
@@ -84,18 +88,37 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
   togglePanelCollapsed: () => {
     const s = get();
     if (!s.panelVisible) {
-      set({ panelVisible: true, panelHeight: Math.max(s.lastExpandedPanelHeight, PANEL_EXPANDED_MIN_HEIGHT) });
+      set({ panelVisible: true, panelMaximized: false, panelHeight: Math.max(s.lastExpandedPanelHeight, PANEL_EXPANDED_MIN_HEIGHT) });
       return;
     }
-    if (s.panelHeight <= PANEL_COLLAPSED_HEIGHT) {
-      set({ panelHeight: Math.max(s.lastExpandedPanelHeight, PANEL_EXPANDED_MIN_HEIGHT) });
+    // Maximized counts as "expanded" here, and collapsing always exits it too - leaving them
+    // as independent, unsynchronized flags produced a real bug: maximize, then Cmd+J (which
+    // used to only look at panelHeight, oblivious to panelMaximized) silently set the stored
+    // height to collapsed while still rendering fullscreen, so clicking Restore afterward
+    // landed on the 32px sliver with nothing indicating why.
+    const isEffectivelyExpanded = s.panelMaximized || s.panelHeight > PANEL_COLLAPSED_HEIGHT;
+    if (isEffectivelyExpanded) {
+      set({
+        lastExpandedPanelHeight: s.panelHeight > PANEL_COLLAPSED_HEIGHT ? s.panelHeight : s.lastExpandedPanelHeight,
+        panelMaximized: false,
+        panelHeight: PANEL_COLLAPSED_HEIGHT,
+      });
     } else {
-      set({ lastExpandedPanelHeight: s.panelHeight, panelHeight: PANEL_COLLAPSED_HEIGHT });
+      set({ panelMaximized: false, panelHeight: Math.max(s.lastExpandedPanelHeight, PANEL_EXPANDED_MIN_HEIGHT) });
     }
   },
   toggleMaximizePanel: () => {
     const s = get();
-    set({ panelMaximized: !s.panelMaximized, panelVisible: true });
+    const next = !s.panelMaximized;
+    // Maximizing from a collapsed state also restores a real height underneath (BottomPanel.tsx
+    // shows content regardless of collapse while maximized, but leaving the stored height at
+    // the 32px floor meant un-maximizing immediately snapped back to that sliver, right after
+    // seeing the full expanded content - reads as a second bug on top of the first).
+    if (next && s.panelHeight <= PANEL_COLLAPSED_HEIGHT) {
+      set({ panelMaximized: true, panelVisible: true, panelHeight: Math.max(s.lastExpandedPanelHeight, PANEL_EXPANDED_MIN_HEIGHT) });
+    } else {
+      set({ panelMaximized: next, panelVisible: true });
+    }
   },
   toggleDistractionFree: () =>
     set((s) => ({

@@ -19,7 +19,12 @@ export function BottomPanel(): React.ReactElement | null {
   const tab = useLayoutStore((s) => s.bottomPanelTab);
   const setTab = useLayoutStore((s) => s.setBottomPanelTab);
 
-  const collapsed = height <= PANEL_COLLAPSED_HEIGHT;
+  // Maximized always shows content regardless of the underlying stored height - without the
+  // maximized exclusion, maximizing a panel that had been collapsed produced a huge, completely
+  // empty box (the content stayed hidden, since this was computed from the old 32px height, not
+  // the panel's actual visible size). Confirmed on the live deployment via Chrome DevTools: a
+  // real, clearly visible bug, not a corner case.
+  const collapsed = !maximized && height <= PANEL_COLLAPSED_HEIGHT;
 
   // Captured at the START of a drag (see onHandlePointerDown) so onCommit can tell "what this
   // drag ended AT" (final, near the collapsed floor if the user dragged all the way down) apart
