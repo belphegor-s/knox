@@ -6,14 +6,34 @@
   background: var(--knox-bg-1);
   position: relative;
 }
+/* Higher specificity than the bare class above so the `hidden` attribute (used to keep the
+   terminal's xterm instance/worker/session alive across Cmd+J toggles, rather than unmounting
+   it) actually wins instead of being silently overridden by our own `display: flex`. */
+.knox-bottompanel[hidden] {
+  display: none;
+}
+.knox-bottompanel--maximized {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-top: none;
+}
+.knox-bottompanel--maximized .knox-bottompanel__resize-handle {
+  display: none;
+}
 .knox-bottompanel__resize-handle {
   position: absolute;
-  top: -3px;
+  top: -4px;
   left: 0;
   right: 0;
-  height: 6px;
+  height: 8px;
   cursor: row-resize;
   z-index: 1;
+}
+.knox-bottompanel__resize-handle:hover,
+.knox-bottompanel__resize-handle:active {
+  background: var(--knox-accent);
+  opacity: 0.5;
 }
 .knox-bottompanel__tabs {
   display: flex;

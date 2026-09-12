@@ -31,8 +31,8 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
   const aiPanelWidth = useLayoutStore((s) => s.aiPanelWidth);
   const setAiPanelWidth = useLayoutStore((s) => s.setAiPanelWidth);
   const setAiPanelVisible = useLayoutStore((s) => s.setAiPanelVisible);
-  const panelVisible = useLayoutStore((s) => s.panelVisible);
-  const setPanelVisible = useLayoutStore((s) => s.setPanelVisible);
+  const togglePanelVisible = useLayoutStore((s) => s.togglePanelVisible);
+  const toggleMaximizePanel = useLayoutStore((s) => s.toggleMaximizePanel);
   const distractionFree = useLayoutStore((s) => s.distractionFree);
   const toggleDistractionFree = useLayoutStore((s) => s.toggleDistractionFree);
   const activeActivityView = useLayoutStore((s) => s.activeActivityView);
@@ -103,7 +103,13 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         title: "View: Toggle Panel",
         category: "Panels",
         shortcut: "⌘J",
-        run: () => setPanelVisible(!panelVisible),
+        run: togglePanelVisible,
+      },
+      {
+        id: "view.toggleMaximizePanel",
+        title: "View: Toggle Maximized Panel",
+        category: "Panels",
+        run: toggleMaximizePanel,
       },
       {
         id: "view.toggleAiPanel",
@@ -163,7 +169,16 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         run: () => useWorkspaceStore.getState().reset(),
       },
     ]);
-  }, [sidebarVisible, panelVisible, aiPanelVisible, toggleTerminalFocus, setSidebarVisible, setPanelVisible, setAiPanelVisible, toggleDistractionFree]);
+  }, [
+    sidebarVisible,
+    aiPanelVisible,
+    toggleTerminalFocus,
+    togglePanelVisible,
+    toggleMaximizePanel,
+    setSidebarVisible,
+    setAiPanelVisible,
+    toggleDistractionFree,
+  ]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {

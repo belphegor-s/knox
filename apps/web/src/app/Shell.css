@@ -42,6 +42,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .knox-shell__ai {

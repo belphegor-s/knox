@@ -40,6 +40,7 @@ export interface PanelLayout {
   aiPanelWidth: number;
   activeActivityView: "explorer" | "search" | "git" | "debug" | "extensions";
   bottomPanelTab: "terminal" | "problems";
+  panelMaximized: boolean;
 }
 
 export interface WorkspaceSession {

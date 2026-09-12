@@ -28,11 +28,29 @@ export function KeyboardShortcutsHelp({ onClose }: { onClose: () => void }): Rea
               ))}
             </div>
           ))}
+          <div className="knox-shortcuts__group">
+            <div className="knox-shortcuts__group-title">Terminal line editing</div>
+            {[
+              ["Move cursor", "←/→"],
+              ["Beginning / end of line", "⌃A / ⌃E  or  Home / End"],
+              ["Jump one word back / forward", "⌥←/⌥→"],
+              ["Delete word backward", "⌥⌫  or  ⌃W"],
+              ["Kill to end / start of line", "⌃K / ⌃U"],
+              ["Command history", "↑/↓"],
+              ["Cancel current line", "⌃C"],
+            ].map(([label, keys]) => (
+              <div key={label} className="knox-shortcuts__row">
+                <span>{label}</span>
+                <kbd>{keys}</kbd>
+              </div>
+            ))}
+          </div>
           <p className="knox-shortcuts__note">
             Plain ⌘W isn't bound to anything here on purpose: Chrome closes the actual browser tab
             on Ctrl/Cmd+W no matter what a page does, so binding it would close your editor tab and
             the browser tab together. Use ⌘⇧W to close an editor tab instead. Your workspace and open
-            tabs auto-restore on reload regardless.
+            tabs auto-restore on reload regardless. The panel's maximize icon (top-right of the
+            Terminal/Problems tabs) expands it to fill the editor area; click it again to restore.
           </p>
         </div>
       </div>

@@ -13,6 +13,8 @@ interface LayoutState extends PanelLayout {
   setBottomPanelTab(tab: PanelLayout["bottomPanelTab"]): void;
   /** Opens the panel on the Terminal tab if it isn't already the visible focus; otherwise closes the panel. Matches VS Code's Ctrl+`. */
   toggleTerminalFocus(): void;
+  togglePanelVisible(): void;
+  toggleMaximizePanel(): void;
   toggleDistractionFree(): void;
   hydrate(layout: PanelLayout): void;
 }
@@ -26,6 +28,7 @@ export const DEFAULT_LAYOUT: PanelLayout = {
   aiPanelWidth: 340,
   activeActivityView: "explorer",
   bottomPanelTab: "terminal",
+  panelMaximized: false,
 };
 
 export const useLayoutStore = create<LayoutState>((set, get) => ({
@@ -41,8 +44,18 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
   setBottomPanelTab: (tab) => set({ bottomPanelTab: tab }),
   toggleTerminalFocus: () => {
     const s = get();
-    if (s.panelVisible && s.bottomPanelTab === "terminal") set({ panelVisible: false });
+    if (s.panelVisible && s.bottomPanelTab === "terminal") set({ panelVisible: false, panelMaximized: false });
     else set({ panelVisible: true, bottomPanelTab: "terminal" });
+  },
+  // Reads fresh state via get() rather than closing over a render-time value - a command bound
+  // to a keyboard shortcut can fire before React has re-rendered with the latest store value.
+  togglePanelVisible: () => {
+    const s = get();
+    set({ panelVisible: !s.panelVisible, panelMaximized: s.panelVisible ? false : s.panelMaximized });
+  },
+  toggleMaximizePanel: () => {
+    const s = get();
+    set({ panelMaximized: !s.panelMaximized, panelVisible: true });
   },
   toggleDistractionFree: () =>
     set((s) => ({
@@ -62,5 +75,6 @@ export function getLayoutSnapshot(): PanelLayout {
     aiPanelWidth: s.aiPanelWidth,
     activeActivityView: s.activeActivityView,
     bottomPanelTab: s.bottomPanelTab,
+    panelMaximized: s.panelMaximized,
   };
 }
