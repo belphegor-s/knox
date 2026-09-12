@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="description" content="Knox is a local-first, browser-native IDE: real file system access, a real terminal, real git, and AI assistance, all running on your machine with no server round-trip." />
+    <meta name="theme-color" content="#0e0f11" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Knox" />
+    <meta property="og:title" content="Knox - a local-first, browser-native IDE" />
+    <meta property="og:description" content="Real file system access, a real terminal, real git, and AI assistance, all running on your machine with no server round-trip." />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Knox - a local-first, browser-native IDE" />
+    <meta name="twitter:description" content="Real file system access, a real terminal, real git, and AI assistance, all running on your machine with no server round-trip." />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <title>Knox</title>
+    <style>
+      /* Inline critical shell styles so the boot screen paints before any JS runs. */
+      html, body { margin: 0; height: 100%; background: #0b0c0e; }
+      #root { height: 100%; }
+      .knox-boot {
+        height: 100%; display: flex; align-items: center; justify-content: center;
+        font: 13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #6b7076;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"><div class="knox-boot">Loading Knox&hellip;</div></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

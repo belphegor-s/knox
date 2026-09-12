@@ -47,6 +47,11 @@ export default defineConfig({
         theme_color: "#0e0f11",
         background_color: "#0b0c0e",
         display: "standalone",
+        // The root is the marketing landing page, not the app - installing "Knox" as a PWA
+        // must launch straight into the actual IDE at /app/, and the service worker should
+        // only take control of that scope, not the landing page.
+        start_url: "/app/",
+        scope: "/app/",
         icons: [
           { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "/icon-512.png", sizes: "512x512", type: "image/png" },
@@ -74,13 +79,13 @@ export default defineConfig({
     target: "es2022",
     sourcemap: true,
     rollupOptions: {
-      // The marketing landing page is a fully separate static entry - no React, no app
-      // shell JS - built alongside the app itself so one `pnpm build` / one Docker image
-      // produces both. Served at /landing/ by nginx's default `try_files $uri $uri/
-      // /index.html` (the directory's own index.html resolves before the SPA fallback).
+      // Root (index.html) is the marketing landing page - no React, no app shell JS - and
+      // the actual IDE lives at /app/. Built as one multi-page Vite project so one
+      // `pnpm build` / one Docker image produces both; infra/nginx.conf routes each path
+      // to its own index.html.
       input: {
-        main: fileURLToPath(new URL("index.html", import.meta.url)),
-        landing: fileURLToPath(new URL("landing/index.html", import.meta.url)),
+        landing: fileURLToPath(new URL("index.html", import.meta.url)),
+        app: fileURLToPath(new URL("app/index.html", import.meta.url)),
       },
     },
   },
