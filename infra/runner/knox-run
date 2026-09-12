@@ -1,0 +1,45 @@
+#!/bin/sh
+# Entrypoint for the knox-runner image. Reads source from stdin, writes it to the given
+# filename under /workspace, compiles it if the language needs that, then runs it with a
+# wall-clock timeout. This is the ONLY thing this image's ENTRYPOINT ever does - it never
+# takes a shell command from the caller, only a language id and a filename.
+set -eu
+
+LANGUAGE="$1"
+FILENAME="$2"
+RUN_TIMEOUT=10
+
+cd /workspace
+cat > "$FILENAME"
+
+case "$LANGUAGE" in
+  python)
+    exec timeout "$RUN_TIMEOUT" python3 "$FILENAME"
+    ;;
+  c)
+    gcc "$FILENAME" -O2 -o /tmp/a.out
+    exec timeout "$RUN_TIMEOUT" /tmp/a.out
+    ;;
+  cpp)
+    g++ "$FILENAME" -O2 -std=c++17 -o /tmp/a.out
+    exec timeout "$RUN_TIMEOUT" /tmp/a.out
+    ;;
+  java)
+    CLASSNAME=$(basename "$FILENAME" .java)
+    javac -d /tmp "$FILENAME"
+    exec timeout "$RUN_TIMEOUT" java -cp /tmp "$CLASSNAME"
+    ;;
+  go)
+    export GOCACHE=/tmp/gocache
+    export GOPATH=/tmp/gopath
+    exec timeout "$RUN_TIMEOUT" go run "$FILENAME"
+    ;;
+  rust)
+    rustc -O "$FILENAME" -o /tmp/a.out
+    exec timeout "$RUN_TIMEOUT" /tmp/a.out
+    ;;
+  *)
+    echo "Unsupported language: $LANGUAGE" >&2
+    exit 1
+    ;;
+esac
