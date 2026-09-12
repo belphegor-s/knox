@@ -129,9 +129,62 @@ export class Shell {
         return result.exitCode;
       }
       case "clear":
-        return 0; // handled client-side
+        // Real terminals clear by emitting the ANSI escape sequence, not a client-side special case.
+        write("stdout", "\x1b[2J\x1b[H");
+        return 0;
+      case "ll": {
+        const target = this.resolve(rest.find((a) => !a.startsWith("-")) ?? "");
+        const entries = await this.vfs.readdir(target);
+        const lines = await Promise.all(
+          entries.map(async (e) => {
+            const stat = await this.vfs.stat(joinPath(target, e.name));
+            const kind = e.type === "directory" ? "d" : "-";
+            const size = e.type === "directory" ? "-" : String(stat.size).padStart(8);
+            const name = e.type === "directory" ? `${e.name}/` : e.name;
+            return `${kind} ${size}  ${name}`;
+          }),
+        );
+        write("stdout", `${lines.join("\n")}\n`);
+        return 0;
+      }
+      case "grep": {
+        if (rest.length < 1) {
+          write("stderr", "grep: usage: grep <pattern> [path]\n");
+          return 1;
+        }
+        const [pattern, target] = rest;
+        let found = 0;
+        for await (const match of this.vfs.search(pattern!, { include: target ? [`${target.replace(/^\//, "")}`] : undefined })) {
+          write("stdout", `${match.path}:${match.line}: ${match.lineText.trim()}\n`);
+          found++;
+        }
+        if (found === 0) write("stderr", `grep: no matches for "${pattern}"\n`);
+        return found === 0 ? 1 : 0;
+      }
+      case "find": {
+        const namePattern = rest[0];
+        if (!namePattern) {
+          write("stderr", "find: usage: find <name-substring>\n");
+          return 1;
+        }
+        const matches: string[] = [];
+        async function walk(vfs: VirtualFileSystem, dir: string): Promise<void> {
+          const entries = await vfs.readdir(dir);
+          for (const e of entries) {
+            const p = joinPath(dir, e.name);
+            if (e.name.includes(namePattern!)) matches.push(p);
+            if (e.type === "directory") await walk(vfs, p);
+          }
+        }
+        await walk(this.vfs, this.cwd);
+        write("stdout", matches.length > 0 ? `${matches.join("\n")}\n` : "");
+        return 0;
+      }
       case "help":
-        write("stdout", "Commands: pwd cd ls cat echo mkdir touch rm cp mv run <file.js|.ts> clear help\n");
+        write(
+          "stdout",
+          "Commands: pwd cd ls ll cat echo mkdir touch rm cp mv grep find run <file.js|.ts> clear help\n",
+        );
         return 0;
       default:
         write("stderr", `${cmd}: command not found\n`);

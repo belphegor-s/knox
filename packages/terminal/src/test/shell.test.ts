@@ -90,4 +90,48 @@ describe("Shell", () => {
     await shell.execute('echo "hello world" foo', out.write);
     expect(out.out).toBe("hello world foo\n");
   });
+
+  it("clear emits the ANSI clear-screen escape sequence", async () => {
+    const out = capture();
+    const code = await shell.execute("clear", out.write);
+    expect(code).toBe(0);
+    expect(out.out).toBe("\x1b[2J\x1b[H");
+  });
+
+  it("ll lists entries with type and size", async () => {
+    await vfs.writeFile("/a.txt", "hello");
+    const out = capture();
+    await shell.execute("mkdir sub", out.write);
+    await shell.execute("ll", out.write);
+    expect(out.out).toContain("a.txt");
+    expect(out.out).toContain("sub/");
+    expect(out.out).toMatch(/^- +5 {2}a\.txt$/m);
+    expect(out.out).toMatch(/^d -\s+sub\/$/m);
+  });
+
+  it("grep finds matching lines across files", async () => {
+    await vfs.writeFile("/a.txt", "hello world\nsecond line");
+    await vfs.writeFile("/b.txt", "nothing here");
+    const out = capture();
+    const code = await shell.execute("grep world", out.write);
+    expect(code).toBe(0);
+    expect(out.out).toContain("a.txt:1: hello world");
+    expect(out.out).not.toContain("b.txt");
+  });
+
+  it("grep reports no matches with a nonzero exit code", async () => {
+    await vfs.writeFile("/a.txt", "nothing interesting");
+    const out = capture();
+    const code = await shell.execute("grep zzzz", out.write);
+    expect(code).toBe(1);
+    expect(out.err).toContain("no matches");
+  });
+
+  it("find locates files by name substring", async () => {
+    await vfs.writeFile("/src/auth.ts", "");
+    await vfs.writeFile("/src/util.ts", "");
+    const out = capture();
+    await shell.execute("find auth", out.write);
+    expect(out.out.trim()).toBe("/src/auth.ts");
+  });
 });
