@@ -123,10 +123,10 @@
         pointer-events: none;
       }
       body::before {
-        left: calc(50% - (var(--max-w) / 2) - 24px);
+        left: calc(50% - (var(--max-w) / 2) - 48px);
       }
       body::after {
-        left: calc(50% + (var(--max-w) / 2) + 24px);
+        left: calc(50% + (var(--max-w) / 2) + 48px);
       }
       nav,
       main,
@@ -281,16 +281,16 @@
       .orb-canvas {
         position: absolute;
         /* The shader's visible glow only fills the inner ~55% of this box's radius (see
-           orb.js's falloff) - positioned so that visible portion sits entirely above the
-           headline, never behind it. A glow bright enough to see on a white background
-           was, correctly, called out as hurting text legibility when it overlapped text -
-           moving it clear of the text is the actual fix, not further color tuning. */
-        top: -430px;
+           orb.js's falloff), so the box is much bigger than what actually shows. Sized and
+           positioned so the VISIBLE glow sits in the gap between the nav and the eyebrow
+           text, above the headline - not shrunk into invisibility (first attempt at "clear
+           of the text" pushed it almost entirely off-screen), and not overlapping the h1. */
+        top: -140px;
         left: 50%;
         transform: translateX(-50%);
-        width: 560px;
-        height: 560px;
-        max-width: 140vw;
+        width: 400px;
+        height: 400px;
+        max-width: 110vw;
         pointer-events: none;
         z-index: 0;
       }
@@ -385,6 +385,7 @@
         padding: 100px 0;
       }
       .section-head {
+        width: calc(100% - 48px);
         max-width: 560px;
         margin: 0 auto 48px;
         text-align: center;
@@ -408,6 +409,7 @@
 
       /* ---------- feature cards ---------- */
       .grid {
+        width: calc(100% - 48px);
         max-width: var(--max-w);
         margin: 0 auto;
         display: grid;
@@ -473,6 +475,7 @@
 
       /* ---------- steps ---------- */
       .steps {
+        width: calc(100% - 48px);
         max-width: var(--max-w);
         margin: 0 auto;
         display: grid;
@@ -504,6 +507,7 @@
 
       /* ---------- final CTA ---------- */
       .close {
+        width: calc(100% - 48px);
         max-width: var(--max-w);
         margin: 0 auto;
         text-align: center;
