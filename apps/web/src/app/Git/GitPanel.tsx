@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GitBranchPlus, Minus, Plus, Undo2 } from "lucide-react";
+import { Download, GitBranchPlus, Link2, Minus, Plus, RefreshCw, Undo2, Upload, X } from "lucide-react";
 import { useGitStore } from "../../state/git-store";
 import type { GitFileStatus } from "@knox/git";
 import "./GitPanel.css";
@@ -38,6 +38,108 @@ function FileRow({ file }: { file: GitFileStatus }): React.ReactElement {
             </button>
           </>
         )}
+      </span>
+    </div>
+  );
+}
+
+function RemoteControls(): React.ReactElement {
+  const remote = useGitStore((s) => s.remote);
+  const remoteOp = useGitStore((s) => s.remoteOp);
+  const setRemote = useGitStore((s) => s.setRemote);
+  const clearRemote = useGitStore((s) => s.clearRemote);
+  const fetchRemote = useGitStore((s) => s.fetchRemote);
+  const pull = useGitStore((s) => s.pull);
+  const push = useGitStore((s) => s.push);
+
+  const [editing, setEditing] = useState(false);
+  const [url, setUrl] = useState(remote?.url ?? "");
+  const [username, setUsername] = useState(remote?.username ?? "");
+  const [token, setToken] = useState(remote?.token ?? "");
+
+  function startEditing(): void {
+    setUrl(remote?.url ?? "");
+    setUsername(remote?.username ?? "");
+    setToken(remote?.token ?? "");
+    setEditing(true);
+  }
+
+  function save(): void {
+    if (!url.trim()) return;
+    void setRemote(url.trim(), username.trim(), token.trim());
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="knox-git__remote knox-git__remote--editing">
+        <input
+          autoFocus
+          className="knox-tree-input"
+          placeholder="https://github.com/user/repo.git"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+        />
+        <input
+          className="knox-tree-input"
+          placeholder="username (often the account name)"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+        />
+        <input
+          className="knox-tree-input"
+          type="password"
+          placeholder="personal access token"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") setEditing(false);
+          }}
+        />
+        <div className="knox-git__remote-form-actions">
+          <button className="knox-btn knox-btn--primary" onClick={save}>
+            Save
+          </button>
+          <button className="knox-btn" onClick={() => setEditing(false)}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!remote) {
+    return (
+      <div className="knox-git__remote">
+        <button className="knox-git__remote-configure" onClick={startEditing}>
+          <Link2 size={13} strokeWidth={1.75} />
+          Configure remote
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="knox-git__remote">
+      <button className="knox-git__remote-url" title="Edit remote" onClick={startEditing}>
+        {remote.url}
+      </button>
+      <span className="knox-git__remote-actions">
+        <button title="Fetch" disabled={remoteOp !== null} onClick={() => void fetchRemote()}>
+          <RefreshCw size={13} strokeWidth={1.75} className={remoteOp === "fetch" ? "knox-git__spin" : ""} />
+        </button>
+        <button title="Pull" disabled={remoteOp !== null} onClick={() => void pull()}>
+          <Download size={13} strokeWidth={1.75} className={remoteOp === "pull" ? "knox-git__spin" : ""} />
+        </button>
+        <button title="Push" disabled={remoteOp !== null} onClick={() => void push()}>
+          <Upload size={13} strokeWidth={1.75} className={remoteOp === "push" ? "knox-git__spin" : ""} />
+        </button>
+        <button title="Remove remote" onClick={() => void clearRemote()}>
+          <X size={13} strokeWidth={1.75} />
+        </button>
       </span>
     </div>
   );
@@ -106,6 +208,8 @@ export function GitPanel(): React.ReactElement {
           </button>
         )}
       </div>
+
+      <RemoteControls />
 
       <textarea
         className="knox-git__message"
