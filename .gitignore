@@ -14,6 +14,8 @@ coverage
 playwright-report
 test-results
 pnpm-lock.yaml.bak
+.cf_token
 
 # The original product spec, kept locally for reference only - never tracked.
 SPEC.md
+.cf_service_token
