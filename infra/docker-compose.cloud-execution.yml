@@ -17,10 +17,18 @@
 #
 # api and worker share this file's own compose network regardless of what Coolify does at the
 # account level, so `http://worker:8082` below is guaranteed to resolve.
+#
+# Build contexts are repo-root-relative (`.`, not `..`) on purpose, unlike
+# infra/docker-compose.yml's - Coolify's docker-compose deploy always passes
+# --project-directory as the repo root regardless of where this file itself sits, and once
+# --project-directory is set explicitly, Compose resolves every relative build path against
+# THAT, not this file's own infra/ directory. `..` here would reach one level above the repo
+# root entirely. This file is Coolify-only (see header) so it's written for that assumption,
+# not for local `docker compose -f` invocations.
 services:
   worker:
     build:
-      context: ..
+      context: .
       dockerfile: apps/worker/Dockerfile
     restart: unless-stopped
     healthcheck:
@@ -32,7 +40,7 @@ services:
 
   api:
     build:
-      context: ..
+      context: .
       dockerfile: apps/api/Dockerfile
     depends_on:
       - worker
