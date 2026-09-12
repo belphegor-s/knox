@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from "react";
 import { FixedSizeList, type ListChildComponentProps } from "react-window";
-import { ChevronRight, File, FilePlus, Folder, FolderOpen, FolderPlus, RefreshCw } from "lucide-react";
+import { ChevronRight, FilePlus, Folder, FolderOpen, FolderPlus, RefreshCw } from "lucide-react";
 import { dirname, isValidFileName, joinPath, type VirtualFileSystem } from "@knox/shared";
 import { useFileTree, type TreeRow } from "./useFileTree";
+import { fileIconFor } from "./file-icons";
 import { useEditorStore } from "../../state/editor-store";
 import { useElementSize } from "../../hooks/useElementSize";
 import "./Explorer.css";
@@ -137,12 +138,15 @@ export function Explorer({ fs, workspaceName }: { fs: VirtualFileSystem | null; 
         <span className="knox-tree-icon" aria-hidden>
           {row.type === "directory" ? (
             row.expanded ? (
-              <FolderOpen size={14} strokeWidth={1.75} />
+              <FolderOpen size={14} strokeWidth={1.75} color="#d3a86a" />
             ) : (
-              <Folder size={14} strokeWidth={1.75} />
+              <Folder size={14} strokeWidth={1.75} color="#d3a86a" />
             )
           ) : (
-            <File size={14} strokeWidth={1.75} />
+            (() => {
+              const { icon: Icon, color } = fileIconFor(row.name);
+              return <Icon size={14} strokeWidth={1.75} color={color} />;
+            })()
           )}
         </span>
         {isRenaming ? (
