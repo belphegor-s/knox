@@ -1,9 +1,29 @@
 import { joinPath, normalizePath, type VirtualFileSystem } from "@knox/shared";
-import { runScript } from "@knox/runtime";
+import { getCapabilities, runRemote, runScript } from "@knox/runtime";
 
 export type Writer = (stream: "stdout" | "stderr", text: string) => void;
 
 const BUILTIN_COMMANDS = ["pwd", "cd", "ls", "ll", "cat", "echo", "mkdir", "touch", "rm", "cp", "mv", "grep", "find", "run", "node", "clear", "help"];
+
+// What `run <file>` knows how to execute at all, by extension. javascript/typescript run
+// locally (packages/runtime); everything else goes to the optional cloud execution service
+// and falls back to an honest "not available" message if nothing is deployed there.
+const EXTENSION_LANGUAGE: Record<string, string> = {
+  js: "javascript",
+  mjs: "javascript",
+  cjs: "javascript",
+  ts: "typescript",
+  mts: "typescript",
+  cts: "typescript",
+  py: "python",
+  c: "c",
+  cpp: "cpp",
+  cc: "cpp",
+  cxx: "cpp",
+  java: "java",
+  go: "go",
+  rs: "rust",
+};
 
 function tokenize(line: string): string[] {
   const out: string[] = [];
@@ -149,11 +169,28 @@ export class Shell {
           return 1;
         }
         const path = this.resolve(rest[0]!);
+        const filename = path.split("/").pop() ?? path;
+        const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+        const language = EXTENSION_LANGUAGE[ext];
+        if (!language) {
+          write("stderr", `${cmd}: don't know how to run "${filename}" (unrecognized extension)\n`);
+          return 1;
+        }
         const code = await this.vfs.readTextFile(path);
-        const language = path.endsWith(".ts") ? "typescript" : "javascript";
-        const result = await runScript({ language, code, onOutput: write });
-        if (result.timedOut) write("stderr", "Execution timed out.\n");
-        return result.exitCode;
+
+        if (language === "javascript" || language === "typescript") {
+          const result = await runScript({ language, code, onOutput: write });
+          if (result.timedOut) write("stderr", "Execution timed out.\n");
+          return result.exitCode;
+        }
+
+        const remote = await runRemote({ language, filename, code, onOutput: write });
+        if (remote.unavailable) {
+          write("stderr", `${getCapabilities(language).unavailableReason}\n`);
+          return 1;
+        }
+        if (remote.timedOut) write("stderr", "Execution timed out.\n");
+        return remote.exitCode;
       }
       case "clear":
         // Real terminals clear by emitting the ANSI escape sequence, not a client-side special case.

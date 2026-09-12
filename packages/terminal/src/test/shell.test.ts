@@ -1,6 +1,15 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IndexedDbFileSystem } from "@knox/filesystem";
 import { Shell } from "../shell.js";
+
+const { runScript, runRemote } = vi.hoisted(() => ({
+  runScript: vi.fn(),
+  runRemote: vi.fn(),
+}));
+vi.mock("@knox/runtime", async () => {
+  const actual = await vi.importActual<typeof import("@knox/runtime")>("@knox/runtime");
+  return { ...actual, runScript, runRemote };
+});
 
 let seq = 0;
 async function freshShell(): Promise<{ shell: Shell; vfs: IndexedDbFileSystem }> {
@@ -133,6 +142,51 @@ describe("Shell", () => {
     const out = capture();
     await shell.execute("find auth", out.write);
     expect(out.out.trim()).toBe("/src/auth.ts");
+  });
+
+  describe("run", () => {
+    beforeEach(() => {
+      runScript.mockReset();
+      runRemote.mockReset();
+    });
+
+    it("rejects a file with no recognized extension without touching either executor", async () => {
+      await vfs.writeFile("/data.bin", "");
+      const out = capture();
+      const code = await shell.execute("run data.bin", out.write);
+      expect(code).toBe(1);
+      expect(out.err).toContain("unrecognized extension");
+      expect(runScript).not.toHaveBeenCalled();
+      expect(runRemote).not.toHaveBeenCalled();
+    });
+
+    it("runs .js/.ts files locally via runScript, never touching the network path", async () => {
+      await vfs.writeFile("/main.ts", "console.log(1)");
+      runScript.mockResolvedValue({ exitCode: 0, durationMs: 1, timedOut: false });
+      const out = capture();
+      const code = await shell.execute("run main.ts", out.write);
+      expect(code).toBe(0);
+      expect(runScript).toHaveBeenCalledWith(expect.objectContaining({ language: "typescript", code: "console.log(1)" }));
+      expect(runRemote).not.toHaveBeenCalled();
+    });
+
+    it("routes non-JS/TS languages to the cloud executor with filename and code", async () => {
+      await vfs.writeFile("/main.py", "print(1)");
+      runRemote.mockResolvedValue({ exitCode: 0, durationMs: 1, timedOut: false, unavailable: false });
+      const out = capture();
+      const code = await shell.execute("run main.py", out.write);
+      expect(code).toBe(0);
+      expect(runRemote).toHaveBeenCalledWith(expect.objectContaining({ language: "python", filename: "main.py", code: "print(1)" }));
+    });
+
+    it("shows the honest capability reason when the cloud executor is unreachable", async () => {
+      await vfs.writeFile("/main.cpp", "int main(){}");
+      runRemote.mockResolvedValue({ exitCode: 1, durationMs: 1, timedOut: false, unavailable: true });
+      const out = capture();
+      const code = await shell.execute("run main.cpp", out.write);
+      expect(code).toBe(1);
+      expect(out.err).toContain("cloud execution service");
+    });
   });
 
   describe("complete", () => {
