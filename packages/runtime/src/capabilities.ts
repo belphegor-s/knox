@@ -16,11 +16,12 @@ const UNAVAILABLE = (language: string, displayName: string, reason: string): Run
 export const RUNTIME_CAPABILITIES: Record<string, RuntimeCapabilities> = {
   javascript: { ...LOCAL, language: "javascript", displayName: "JavaScript" },
   typescript: { ...LOCAL, language: "typescript", displayName: "TypeScript" },
-  python: UNAVAILABLE("python", "Python", "Needs a bundled WASM runtime (Pyodide) - not wired up yet. Use cloud execution once available."),
-  rust: UNAVAILABLE("rust", "Rust", "No local WASM toolchain bundled. Requires cloud execution."),
-  go: UNAVAILABLE("go", "Go", "No local WASM toolchain bundled. Requires cloud execution."),
-  c: UNAVAILABLE("c", "C", "No local WASM toolchain bundled. Requires cloud execution."),
-  cpp: UNAVAILABLE("cpp", "C++", "No local WASM toolchain bundled. Requires cloud execution."),
+  python: UNAVAILABLE("python", "Python", "No local WASM runtime bundled. Runs via the optional cloud execution service if one is deployed."),
+  rust: UNAVAILABLE("rust", "Rust", "No local WASM toolchain bundled. Runs via the optional cloud execution service if one is deployed."),
+  go: UNAVAILABLE("go", "Go", "No local WASM toolchain bundled. Runs via the optional cloud execution service if one is deployed."),
+  c: UNAVAILABLE("c", "C", "No local WASM toolchain bundled. Runs via the optional cloud execution service if one is deployed."),
+  cpp: UNAVAILABLE("cpp", "C++", "No local WASM toolchain bundled. Runs via the optional cloud execution service if one is deployed."),
+  java: UNAVAILABLE("java", "Java", "No local WASM toolchain bundled. Runs via the optional cloud execution service if one is deployed."),
   sql: UNAVAILABLE("sql", "SQL", "No local database engine bundled yet."),
 };
 

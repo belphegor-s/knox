@@ -10,10 +10,14 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@knox/shared": "workspace:*",
     "typescript": "5.9.3"
+  },
+  "devDependencies": {
+    "vitest": "2.1.9"
   }
 }
