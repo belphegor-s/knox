@@ -1,0 +1,28 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OneTimeProvisioning",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "s3:CreateBucket",
+        "s3:PutBucketLifecycleConfiguration",
+        "s3:PutPublicAccessBlock",
+        "ecs:CreateCluster",
+        "ecs:RegisterTaskDefinition",
+        "iam:CreateRole",
+        "iam:PutRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:PutUserPolicy",
+        "iam:GetRole",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:CreateSecurityGroup",
+        "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:DescribeSecurityGroups"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
