@@ -257,7 +257,17 @@ export function TerminalView({ workspaceId, fsBackend, directoryHandle }: Termin
       s.onOutput = (_stream, text) => term.write(text.replace(/\n/g, "\r\n"));
     });
 
-    const resizeObserver = new ResizeObserver(safeFit);
+    // Collapsing the bottom panel (BottomPanel.tsx) hides this container via the `hidden`
+    // attribute rather than unmounting it, so its content-box drops to 0x0 - and fit() on a
+    // zero-size container doesn't just no-op, it can compute degenerate rows/cols (per a
+    // documented xterm.js FitAddon quirk) that then stick even after the container is
+    // properly sized again on expand, corrupting the rendered viewport (text overflowing or
+    // getting clipped at the wrong boundary). A real resize to zero never legitimately
+    // happens otherwise, so skipping it here costs nothing.
+    const resizeObserver = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect;
+      if (box && box.width > 0 && box.height > 0) safeFit();
+    });
     resizeObserver.observe(containerRef.current);
 
     return () => {
