@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLayoutStore } from "../../state/layout-store";
 import { useDragResize } from "../../hooks/useDragResize";
+import { TerminalPanel } from "./TerminalPanel";
 import "./BottomPanel.css";
 
 type Tab = "terminal" | "problems";
@@ -31,20 +32,15 @@ export function BottomPanel(): React.ReactElement | null {
         </button>
       </div>
       <div className="knox-bottompanel__content">
-        {tab === "terminal" && (
-          <div className="knox-bottompanel__empty">
-            <p>The terminal isn't wired up yet in this build.</p>
-            <p className="knox-bottompanel__empty-detail">
-              It runs a local shell over WASM in a worker (SPEC section 13) - arriving in the next implementation pass.
-            </p>
-          </div>
-        )}
-        {tab === "problems" && (
+        <div className="knox-bottompanel__pane" hidden={tab !== "terminal"}>
+          <TerminalPanel />
+        </div>
+        <div className="knox-bottompanel__pane" hidden={tab !== "problems"}>
           <div className="knox-bottompanel__empty">
             <p>No problems detected.</p>
             <p className="knox-bottompanel__empty-detail">Diagnostics appear here once the language service and linters are wired up.</p>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

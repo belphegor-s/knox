@@ -49,6 +49,10 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  position: relative;
+}
+.knox-bottompanel__pane {
+  height: 100%;
 }
 .knox-bottompanel__empty {
   height: 100%;
