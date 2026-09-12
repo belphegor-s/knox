@@ -134,4 +134,41 @@ describe("Shell", () => {
     await shell.execute("find auth", out.write);
     expect(out.out.trim()).toBe("/src/auth.ts");
   });
+
+  describe("complete", () => {
+    it("completes a builtin command name", async () => {
+      const candidates = await shell.complete("ec");
+      expect(candidates).toEqual(["echo"]);
+    });
+
+    it("lists all builtins for an empty first word", async () => {
+      const candidates = await shell.complete("");
+      expect(candidates).toContain("ls");
+      expect(candidates).toContain("cd");
+    });
+
+    it("completes a filename argument from the current directory", async () => {
+      await vfs.writeFile("/hello.txt", "");
+      await vfs.writeFile("/help-notes.md", "");
+      const candidates = await shell.complete("cat hel");
+      expect(candidates.sort()).toEqual(["hello.txt", "help-notes.md"]);
+    });
+
+    it("marks directories with a trailing slash", async () => {
+      await vfs.mkdir("/src");
+      const candidates = await shell.complete("cd sr");
+      expect(candidates).toEqual(["src/"]);
+    });
+
+    it("completes within a subdirectory path", async () => {
+      await vfs.writeFile("/src/auth.ts", "");
+      const candidates = await shell.complete("cat src/au");
+      expect(candidates).toEqual(["src/auth.ts"]);
+    });
+
+    it("returns nothing for a path with no matches", async () => {
+      const candidates = await shell.complete("cat zzz");
+      expect(candidates).toEqual([]);
+    });
+  });
 });

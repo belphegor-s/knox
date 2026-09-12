@@ -3,6 +3,8 @@ import { runScript } from "@knox/runtime";
 
 export type Writer = (stream: "stdout" | "stderr", text: string) => void;
 
+const BUILTIN_COMMANDS = ["pwd", "cd", "ls", "ll", "cat", "echo", "mkdir", "touch", "rm", "cp", "mv", "grep", "find", "run", "node", "clear", "help"];
+
 function tokenize(line: string): string[] {
   const out: string[] = [];
   let cur = "";
@@ -39,6 +41,31 @@ export class Shell {
   resolve(p: string): string {
     if (!p) return this.cwd;
     return p.startsWith("/") ? normalizePath(p) : joinPath(this.cwd, p);
+  }
+
+  /** Tab-completion candidates for the word under the cursor - real command names and real directory listings, not a canned list. */
+  async complete(line: string): Promise<string[]> {
+    const endsWithSpace = /\s$/.test(line);
+    const tokens = tokenize(line);
+    const onFirstWord = tokens.length === 0 || (tokens.length === 1 && !endsWithSpace);
+
+    if (onFirstWord) {
+      const partial = tokens[0] ?? "";
+      return BUILTIN_COMMANDS.filter((c) => c.startsWith(partial));
+    }
+
+    const partial = endsWithSpace ? "" : (tokens[tokens.length - 1] ?? "");
+    const lastSlash = partial.lastIndexOf("/");
+    const dirPart = lastSlash === -1 ? "" : partial.slice(0, lastSlash + 1);
+    const namePart = lastSlash === -1 ? partial : partial.slice(lastSlash + 1);
+    try {
+      const entries = await this.vfs.readdir(this.resolve(dirPart || "."));
+      return entries
+        .filter((e) => e.name.startsWith(namePart))
+        .map((e) => `${dirPart}${e.name}${e.type === "directory" ? "/" : ""}`);
+    } catch {
+      return [];
+    }
   }
 
   async execute(line: string, write: Writer): Promise<number> {

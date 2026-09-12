@@ -19,5 +19,6 @@ function write(stream: "stdout" | "stderr", text: string): void {
 exposeRpc({
   init,
   execute: (line: string) => shell.execute(line, write),
+  complete: (line: string) => shell.complete(line),
   getCwd: () => Promise.resolve(shell.cwd),
 });

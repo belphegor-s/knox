@@ -5,6 +5,7 @@ interface TerminalRpcApi {
   [method: string]: (...args: any[]) => Promise<any>;
   init(workspaceId: string, fsBackend: string, directoryHandle?: FileSystemDirectoryHandle): Promise<void>;
   execute(line: string): Promise<number>;
+  complete(line: string): Promise<string[]>;
   getCwd(): Promise<string>;
 }
 
@@ -33,6 +34,10 @@ export class TerminalSession {
 
   execute(line: string): Promise<number> {
     return this.api.execute(line);
+  }
+
+  complete(line: string): Promise<string[]> {
+    return this.api.complete(line);
   }
 
   getCwd(): Promise<string> {
