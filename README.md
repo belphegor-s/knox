@@ -17,20 +17,21 @@ This README describes what's actually implemented, what's scaffolded-but-honest-
 - Monaco-based editor (`packages/editor`) with real TypeScript/JavaScript/JSON/HTML/CSS language intelligence, syntax highlighting for a dozen+ other languages, large-file degradation, binary/image file handling
 - Virtualized file explorer (create/rename/delete/move), tabs (preview + pinned), command palette, quick open, keyboard-first navigation
 - Git (`packages/git`) - isomorphic-git in a worker: init/clone/status/add/commit/branch/checkout/log/diff/fetch/pull/push/merge, a real Source Control panel with inline diff
-- Terminal (`packages/terminal`) - xterm.js over a worker-hosted shell (pwd/cd/ls/cat/echo/mkdir/touch/rm/cp/mv) plus `run <file.js|.ts>`, which actually executes the file (`packages/runtime`) and streams real stdout/stderr back
+- Terminal (`packages/terminal`) - xterm.js over a worker-hosted shell, real readline-style line editing (cursor movement, word-jump/word-delete, kill-to-start/end, history, Tab completion for commands and paths - see `packages/terminal/src/view.tsx`), plus `run <file>`
 - Local JS/TS execution (`packages/runtime`) - runs in a disposable worker per call, TypeScript transpiled via the real TS compiler, output streamed, hard timeout
+- Cloud execution for Python/C/C++/Java/Go/Rust (`apps/api` + `apps/worker`) - `run <file>` in the terminal forwards to a real, sandboxed Docker container (network-isolated, read-only root fs, memory/CPU/pid-capped, non-root, timeout-enforced) when one of those languages' local runtime is unavailable; optional and additive - see `docs/cloud-runtime.md`. `run`'s language dispatch is by file extension, not a hardcoded JS/TS assumption
 - Workspace search (`packages/search`) - runs in a worker, cancels stale requests, jump-to-line from results
 - AI chat (`packages/ai`) - real streaming chat (fetch + SSE) against OpenAI-compatible or Anthropic endpoints, BYO key stored only in this browser, a visible "AI Context" inspector, pattern-based secret redaction before anything reaches a provider
 - Service-worker precaching for instant, offline-capable repeat loads
-- Docker/Coolify-ready deployment (static build behind nginx, with the correct cross-origin-isolation headers)
+- Docker/Coolify-ready deployment (static build behind nginx, with the correct cross-origin-isolation headers); optional cloud-execution containers behind a compose profile
 
 **Scaffolded architecture, not yet wired to real behavior:**
 
 - AI agent loop, patch propose/apply, the AI permission model, model routing, Git/terminal-specific AI actions (commit messages, explain diff/failure) - the chat itself is real; these are the larger features built on top of it
 - Preview panel for web projects
 - LSP architecture for languages beyond TS/JS (syntax highlighting works; no diagnostics/go-to-def for Python/Rust/Go/C/C++ etc.)
-- Cloud execution, sync, collaboration, auth - described in the architecture docs, not implemented
-- WASM runtimes beyond JS/TS (Python/Rust/Go/C/C++/SQL all report `localExecution: false` with a specific reason - see `packages/runtime`)
+- Sync, collaboration, auth - described in `docs/cloud-runtime.md`, not implemented (cloud execution, in the same document, now is)
+- WASM runtimes for Python/Rust/Go/C/C++ locally in the browser - these run via the cloud execution path above instead; no bundled WASM toolchain exists for them (see `packages/runtime/src/capabilities.ts`)
 
 Nothing above fakes functionality it doesn't have - every "not yet" surface says so explicitly instead of pretending. See the Roadmap section below.
 
@@ -52,8 +53,8 @@ Concretely, this means:
 ```
 /apps
   /web         React + Vite app shell - the IDE itself
-  /api         (planned) stateless API: auth, sync, cloud execution, AI proxy
-  /worker      (planned) cloud execution worker
+  /api         stateless, public-facing HTTP layer - implemented for cloud execution (POST /api/execute); auth/sync/AI-proxy routes still planned
+  /worker      Docker-socket-privileged cloud execution worker - implemented; runs submitted code in a sandboxed container per request
 
 /packages
   /shared      cross-cutting types, events, VFS interface, worker RPC, utilities
@@ -128,10 +129,9 @@ In spec build order (see `SPEC.md` section 110), what's next:
 
 1. LSP architecture for languages beyond TS/JS
 2. Preview panel for web projects
-3. WASM language runtimes beyond JS/TS (Python via Pyodide first, capability-gated for the rest)
-4. AI agent loop (understand → plan → inspect → modify → test), patch propose/apply with per-file accept/reject, the explicit AI permission model from SPEC section 22
-5. Git/terminal-specific AI actions built on the existing chat: commit message generation from a real diff, explain diff, explain a failed command
-6. Cloud execution, sync, collaboration, auth (`apps/api`, `apps/worker`)
+3. AI agent loop (understand → plan → inspect → modify → test), patch propose/apply with per-file accept/reject, the explicit AI permission model from SPEC section 22
+4. Git/terminal-specific AI actions built on the existing chat: commit message generation from a real diff, explain diff, explain a failed command
+5. Sync, collaboration, auth (`apps/api`, `apps/worker`) - cloud execution, the first piece of this milestone, is already implemented (see `docs/cloud-runtime.md`)
 
 ## License
 

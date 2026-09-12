@@ -31,6 +31,19 @@ docker build -f infra/Dockerfile -t knox .
 docker run -p 8080:8080 knox        # http://localhost:8080, health check at /health
 ```
 
+Cloud execution (Python/C/C++/Java/Go/Rust `run <file>` in the terminal) is a separate, optional
+stack - see `docs/cloud-runtime.md`:
+
+```bash
+docker compose -f infra/docker-compose.yml --profile cloud-execution up --build
+# web on :8080 (with /api/ proxied), api and worker internal-only, requires a reachable
+# /var/run/docker.sock on the host (apps/worker spawns sandboxed sibling containers there)
+```
+
+For local dev without a full compose rebuild: `pnpm dev:worker` (needs `knox-runner:latest`
+built once via `docker build -f infra/runner.Dockerfile -t knox-runner:latest infra/`),
+`pnpm dev:api`, then `pnpm dev` - the web dev server proxies `/api` to `localhost:8081`.
+
 There's no top-level `lint` enforced in CI yet; `pnpm lint` scripts exist per-package but aren't wired to real ESLint configs.
 
 ### Verifying UI changes
@@ -77,6 +90,37 @@ Two things that bit this exact pattern in practice, worth knowing before you hit
 ### Cross-origin isolation
 
 `SharedArrayBuffer`/threaded WASM need `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp`, set in two independent places that must be kept in sync: the dev-server plugin in `apps/web/vite.config.ts` and `infra/nginx.conf` for production. If you add a build step or deployment path, it needs these headers too.
+
+### Cloud execution (apps/api, apps/worker) - real, and security-sensitive
+
+Deliberately split into two services with different trust levels, not one: `apps/api` is the
+public route (`POST /api/execute`), does request validation and per-IP rate limiting, and has
+**no Docker access at all**. It forwards to `apps/worker`'s internal `/execute`, which is the
+only service with the host's Docker socket mounted and is the one that actually runs
+`docker run` (`apps/worker/src/docker-runner.ts`) against the `knox-runner` image
+(`infra/runner.Dockerfile`). Never merge these two services or give `apps/api` Docker access -
+that split is the whole point: a bug in the public-facing process can't reach the sandbox
+orchestrator. If you touch `docker-runner.ts`'s flags (`--network none`, `--read-only`,
+`--memory`, `--cap-drop ALL`, etc.), re-verify each one against a real Docker daemon the way it
+was verified originally (network genuinely blocked, filesystem genuinely read-only, memory limit
+genuinely OOM-killing an intentional over-allocation) - don't just trust that the flag exists.
+
+`infra/nginx.conf`'s `/api/` location uses `set $api_upstream ...; proxy_pass $api_upstream;`
+(no path after the variable) on purpose, for two reasons that both matter: (1) a variable in
+`proxy_pass` defers DNS resolution to request time via the `resolver 127.0.0.11` directive,
+so nginx starts fine even when `api`/`worker` aren't deployed (base single-container deployment
+must keep working) - a static hostname would fail DNS at startup and crash the whole server;
+(2) once you use a variable, nginx stops doing its usual location-prefix rewrite, so any literal
+path after the variable *replaces* the request path instead of extending it - `$api_upstream/api/`
+silently turned every request into a request for `/api/`, which is a real bug this hit once.
+
+`packages/runtime/src/remote-executor.ts`'s `runRemote()` is the frontend half - it distinguishes
+"nothing is deployed at `/api/execute`" (`unavailable: true`, network error or a non-JSON
+response like nginx's own 404 page) from "the backend ran the code and it genuinely failed"
+(`unavailable: false`, a real compiler/runtime error shown as-is). `packages/terminal/src/shell.ts`'s
+`run <file>` dispatches on file extension (`EXTENSION_LANGUAGE`) - JS/TS stay local
+(`packages/runtime`'s `runScript`), everything else goes through `runRemote`, falling back to
+`getCapabilities(language).unavailableReason` only when truly `unavailable`.
 
 ## Repository conventions
 
