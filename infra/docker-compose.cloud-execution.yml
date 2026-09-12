@@ -1,0 +1,49 @@
+# Standalone compose file for deploying apps/api + apps/worker as their OWN Coolify
+# application, separate from the knox-web app (infra/docker-compose.yml's default `web`
+# service). Deliberately doesn't include `web` or `runner` here:
+#  - `web` already exists as its own Coolify app; this file's only job is to give it something
+#    to reach at KNOX_API_URL (see infra/nginx.conf's /api/ route) over public HTTPS, matching
+#    how every other multi-service project on this account is wired (frontend and backend as
+#    separate Coolify apps talking over their own public subdomains, not shared Docker DNS -
+#    Coolify doesn't guarantee two independently-deployed apps share a network).
+#  - `runner` (the knox-runner image used by docker-runner.ts's sibling containers) is only
+#    needed for the local KNOX_EXECUTION_BACKEND=docker path. This deployment is meant to run
+#    with KNOX_EXECUTION_BACKEND=ecs (set via Coolify's own environment variable UI, not baked
+#    in here) - the worker calls AWS Fargate instead of a local Docker socket, so it needs no
+#    Docker socket access on this host at all. Never add the docker.sock volume mount back to
+#    this file - this compose file's whole point versus the other one is that it doesn't need
+#    (and must not have) privileged host access, since this container is what's actually
+#    reachable from the public internet.
+#
+# api and worker share this file's own compose network regardless of what Coolify does at the
+# account level, so `http://worker:8082` below is guaranteed to resolve.
+services:
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8082/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      - worker
+    environment:
+      KNOX_WORKER_URL: http://worker:8082
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
