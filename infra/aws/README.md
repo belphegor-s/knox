@@ -39,9 +39,11 @@ Read this before deciding to switch a deployment over:
   Fargate doesn't support it. A writable root filesystem for the one-shot container is an
   accepted trade here, not an oversight: the whole microVM is destroyed after this single
   execution regardless, so there's nothing for a write to persist into.
-- **No `no-new-privileges` equivalent.** ECS's `linuxParameters` doesn't expose Docker's
-  `--security-opt no-new-privileges` as a task-definition field. `capabilities.drop: ["ALL"]`
-  and `pidsLimit` are supported and set below; this one flag isn't replicated.
+- **No `no-new-privileges` or `--pids-limit` equivalent.** ECS's `linuxParameters` doesn't
+  expose either as a task-definition field, for any launch type - only
+  `capabilities.drop: ["ALL"]` (set below) carries over from the local Docker flags. A
+  container escape gaining a fork bomb's worth of PIDs is bounded only by the task's own
+  memory/CPU limits, not a hard PID ceiling.
 
 ## One-time setup
 

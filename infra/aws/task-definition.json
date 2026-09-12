@@ -13,8 +13,7 @@
       "essential": true,
       "user": "1000:1000",
       "linuxParameters": {
-        "capabilities": { "drop": ["ALL"] },
-        "pidsLimit": 128
+        "capabilities": { "drop": ["ALL"] }
       },
       "logConfiguration": {
         "logDriver": "awslogs",

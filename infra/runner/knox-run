@@ -23,21 +23,26 @@ RUN_TIMEOUT=10
 cd /workspace
 
 run_program() {
+  # Called with `set +e` active (see below - the caller needs this function's own exit code,
+  # not to die under errexit) so a failing compile step here does NOT stop the script on its
+  # own the way it does in the local branch above - each compile step needs its own explicit
+  # `|| return $?` or a failed compile would fall through into trying to run a binary that was
+  # never produced, replacing a real compiler error with a confusing "no such file" one.
   case "$LANGUAGE" in
     python)
       timeout "$RUN_TIMEOUT" python3 "$FILENAME"
       ;;
     c)
-      gcc "$FILENAME" -O2 -o /tmp/a.out
+      gcc "$FILENAME" -O2 -o /tmp/a.out || return $?
       timeout "$RUN_TIMEOUT" /tmp/a.out
       ;;
     cpp)
-      g++ "$FILENAME" -O2 -std=c++17 -o /tmp/a.out
+      g++ "$FILENAME" -O2 -std=c++17 -o /tmp/a.out || return $?
       timeout "$RUN_TIMEOUT" /tmp/a.out
       ;;
     java)
       CLASSNAME=$(basename "$FILENAME" .java)
-      javac -d /tmp "$FILENAME"
+      javac -d /tmp "$FILENAME" || return $?
       timeout "$RUN_TIMEOUT" java -cp /tmp "$CLASSNAME"
       ;;
     go)
@@ -46,7 +51,7 @@ run_program() {
       timeout "$RUN_TIMEOUT" go run "$FILENAME"
       ;;
     rust)
-      rustc -O "$FILENAME" -o /tmp/a.out
+      rustc -O "$FILENAME" -o /tmp/a.out || return $?
       timeout "$RUN_TIMEOUT" /tmp/a.out
       ;;
     *)
