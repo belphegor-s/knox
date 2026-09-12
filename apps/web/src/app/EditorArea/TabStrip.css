@@ -57,8 +57,8 @@
   white-space: nowrap;
 }
 .knox-tab__dot {
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--knox-text-tertiary);
   flex-shrink: 0;
@@ -71,8 +71,8 @@
   border: none;
   background: transparent;
   color: var(--knox-text-tertiary);
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   margin: 0 -2px 0 0;
   border-radius: var(--knox-radius-sm);
   cursor: pointer;
