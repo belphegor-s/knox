@@ -1,5 +1,5 @@
 import express from "express";
-import { runInContainer } from "./docker-runner.js";
+import { runExecution } from "./executor.js";
 import { isSupportedLanguage, validateFilename } from "./languages.js";
 
 const app = express();
@@ -39,7 +39,7 @@ app.post("/execute", (req, res) => {
     res.write(`${JSON.stringify(event)}\n`);
   };
 
-  runInContainer({
+  runExecution({
     language,
     filename,
     code,
