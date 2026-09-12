@@ -16,6 +16,7 @@ interface LayoutState extends PanelLayout {
   setSidebarWidth(width: number): void;
   setPanelVisible(visible: boolean): void;
   setPanelHeight(height: number): void;
+  setLastExpandedPanelHeight(height: number): void;
   setAiPanelVisible(visible: boolean): void;
   setAiPanelWidth(width: number): void;
   setActiveActivityView(view: PanelLayout["activeActivityView"]): void;
@@ -51,13 +52,15 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
   setSidebarVisible: (visible) => set({ sidebarVisible: visible }),
   setSidebarWidth: (width) => set({ sidebarWidth: Math.round(width) }),
   setPanelVisible: (visible) => set({ panelVisible: visible }),
-  setPanelHeight: (height) => {
-    const rounded = Math.round(height);
-    set((s) => ({
-      panelHeight: rounded,
-      lastExpandedPanelHeight: rounded > PANEL_COLLAPSED_HEIGHT ? rounded : s.lastExpandedPanelHeight,
-    }));
-  },
+  // Deliberately has NO side effect on lastExpandedPanelHeight - it fires on every pointer-move
+  // frame during a live drag (BottomPanel.tsx's onChange), including every value on the way
+  // down to fully collapsed. Updating lastExpandedPanelHeight here ends up recording wherever
+  // the drag happened to be at release (near the collapsed floor), not the height it actually
+  // started from - a real bug this hit once. That bookkeeping now lives entirely in
+  // setLastExpandedPanelHeight, called once on drag release (see BottomPanel.tsx's onCommit),
+  // not continuously here.
+  setPanelHeight: (height) => set({ panelHeight: Math.round(height) }),
+  setLastExpandedPanelHeight: (height) => set({ lastExpandedPanelHeight: Math.round(height) }),
   setAiPanelVisible: (visible) => set({ aiPanelVisible: visible }),
   setAiPanelWidth: (width) => set({ aiPanelWidth: Math.round(width) }),
   setActiveActivityView: (view) => set({ activeActivityView: view, sidebarVisible: true }),

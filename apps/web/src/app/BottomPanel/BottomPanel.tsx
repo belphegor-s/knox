@@ -12,6 +12,7 @@ export function BottomPanel(): React.ReactElement | null {
   const maximized = useLayoutStore((s) => s.panelMaximized);
   const height = useLayoutStore((s) => s.panelHeight);
   const setHeight = useLayoutStore((s) => s.setPanelHeight);
+  const setLastExpandedHeight = useLayoutStore((s) => s.setLastExpandedPanelHeight);
   const setVisible = useLayoutStore((s) => s.setPanelVisible);
   const toggleMaximize = useLayoutStore((s) => s.toggleMaximizePanel);
   const toggleCollapsed = useLayoutStore((s) => s.togglePanelCollapsed);
@@ -19,6 +20,14 @@ export function BottomPanel(): React.ReactElement | null {
   const setTab = useLayoutStore((s) => s.setBottomPanelTab);
 
   const collapsed = height <= PANEL_COLLAPSED_HEIGHT;
+
+  // Captured at the START of a drag (see onHandlePointerDown) so onCommit can tell "what this
+  // drag ended AT" (final, near the collapsed floor if the user dragged all the way down) apart
+  // from "what it started FROM" - the value actually worth remembering as the height to restore
+  // to later. Using `final` for that instead (an earlier version of this fix did) meant a slow
+  // drag to fully collapsed recorded something barely above collapsed, not the real expanded
+  // height it started from.
+  const dragStartHeight = useRef(height);
 
   // Live drag shows the raw dragged height with no snapping - snapping-while-dragging forced
   // every intermediate frame below SNAP_THRESHOLD back to exactly PANEL_COLLAPSED_HEIGHT, so a
@@ -36,9 +45,21 @@ export function BottomPanel(): React.ReactElement | null {
     max: 640,
     onChange: setHeight,
     onCommit: (final) => {
-      if (final < SNAP_THRESHOLD) setHeight(PANEL_COLLAPSED_HEIGHT);
+      if (final < SNAP_THRESHOLD) {
+        if (dragStartHeight.current > PANEL_COLLAPSED_HEIGHT) {
+          setLastExpandedHeight(Math.max(dragStartHeight.current, PANEL_EXPANDED_MIN_HEIGHT));
+        }
+        setHeight(PANEL_COLLAPSED_HEIGHT);
+      } else {
+        setLastExpandedHeight(Math.max(final, PANEL_EXPANDED_MIN_HEIGHT));
+      }
     },
   });
+
+  function onHandlePointerDown(e: React.PointerEvent): void {
+    dragStartHeight.current = height;
+    resize.onPointerDown(e);
+  }
 
   // Once the panel has been opened at least once, keep it mounted (hidden via CSS, not
   // unmounted) so the terminal's xterm instance, worker, and shell session (cwd, history)
@@ -57,7 +78,7 @@ export function BottomPanel(): React.ReactElement | null {
       <div
         className="knox-bottompanel__resize-handle"
         title="Drag to resize - double-click to collapse"
-        onPointerDown={resize.onPointerDown}
+        onPointerDown={onHandlePointerDown}
         onDoubleClick={toggleCollapsed}
       />
       <div className="knox-bottompanel__tabs">
