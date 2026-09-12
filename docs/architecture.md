@@ -66,6 +66,12 @@ This isn't cosmetic: importing anything from a barrel that transitively pulls in
 
 If you put another reverse proxy in front of the nginx container (Coolify's own proxy, Cloudflare, Traefik), **it must forward these headers unchanged** - a proxy that strips unrecognized headers will silently disable `SharedArrayBuffer`, and the app should (once the runtime package lands) detect and report that rather than fail mysteriously, per SPEC section 40.
 
+## The worker-per-feature pattern
+
+Git, Terminal, and Search each follow the same shape: a client class on the main thread (`GitClient`, `TerminalSession`, `SearchClient`) spawns a dedicated worker via a `?worker` import, and the worker constructs its *own* `VirtualFileSystem` instance for the same workspace rather than the main thread trying to transfer one. This works because OPFS and IndexedDB are natively available inside workers - both contexts end up reading/writing the same underlying storage. A File System Access directory handle is the one case that needs an explicit transfer, and it structured-clones across `postMessage` without extra plumbing.
+
+`packages/shared/src/rpc.ts` is the generic request/response layer underneath all three (`createRpcClient`/`exposeRpc`). Streaming output (terminal stdout/stderr, in the future anything else that doesn't fit request/response) rides on unsolicited `postMessage({type: "output", ...})` calls the client listens for separately, since RPC itself is strictly one request → one response.
+
 ## What's not built yet
 
-`packages/runtime`, `terminal`, `git`, `language-server`, `collaboration`, `ai`, `sync`, `security`, `protocol`, and `apps/api`/`apps/worker` are specified in `SPEC.md` and named in the repo structure but not implemented - seeing them in a directory listing or import path is not evidence they exist. The web app's Terminal/Git/AI panels say so explicitly in their empty states rather than showing fake UI. See the README's Roadmap section for build order.
+`language-server` (beyond Monaco's bundled TS/JS), `collaboration`, `sync`, `security` (the AI permission model - secret detection itself already lives in `packages/ai`), `protocol`, and `apps/api`/`apps/worker` are specified in `SPEC.md` and named in the repo structure but not implemented - seeing a directory is not evidence of what's inside it. The web app's AI panel is honest about this too: the chat itself is real, but there's no agent loop, no patch-apply flow, and no permission-gated tool calls yet. See the README's Roadmap section for build order.

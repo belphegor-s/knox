@@ -64,6 +64,16 @@ This split is load-bearing, not stylistic: if anything anywhere statically impor
 
 `apps/web/src/commands/registry.ts` is the single source of truth for "things the app can do." Features register commands via `useRegisterCommands`/`commandRegistry.registerAll` on mount rather than wiring a keyboard shortcut straight to a component method. The Command Palette (`⌘K`/`⌘⇧P`) and Quick Open (`⌘P`) both read from this registry through the shared `Palette` component (`apps/web/src/app/Palette/Palette.tsx`) - don't build a second, parallel command list for a new feature.
 
+### The worker-per-feature pattern (Git, Terminal, Search)
+
+`GitClient`/`TerminalSession`/`SearchClient` on the main thread each spawn their own dedicated worker via a `?worker` import, and that worker constructs its **own** `VirtualFileSystem` for the same workspace rather than the main thread transferring one - OPFS/IndexedDB are natively available inside workers, so both contexts end up reading/writing the same underlying storage. A File System Access directory handle is the one case needing an explicit transfer (it structured-clones across `postMessage` fine). `packages/shared/src/rpc.ts` (`createRpcClient`/`exposeRpc`) is the generic request/response layer underneath all three; streaming output (terminal stdout/stderr) rides unsolicited `postMessage({type: "output", ...})` calls the client listens for separately, since RPC itself is one request → one response. Follow this same shape for any new worker-hosted feature rather than inventing a new pattern.
+
+Two things that bit this exact pattern in practice, worth knowing before you hit them again: (1) `packages/filesystem/src/detect.ts` used to reference `window` unconditionally, which crashes instantly inside a worker (no `window` there) - any code path a worker might exercise needs to tolerate missing `window`/`document`. (2) isomorphic-git assumes Node's `Buffer` global; Vite doesn't polyfill it for workers, so `packages/git/src/worker.ts` imports the `buffer` package and assigns it onto `globalThis` before any isomorphic-git call - a real, previously-invisible bug that only showed up when actually run in a browser, not in unit tests against `fake-indexeddb`.
+
+### AI providers
+
+`packages/ai`'s `AiProvider` interface has two implementations (`OpenAiCompatibleProvider`, `AnthropicProvider`), both real `fetch()` + SSE parsing (`packages/ai/src/sse.ts`) - no mock path exists in the shipped code. Provider config (including the API key) is stored in its own IndexedDB database (`apps/web/src/services/ai-settings.ts`), never proxied through a backend. Any file content included in a prompt goes through `packages/ai/src/secrets.ts` (pattern-based redaction) and gets wrapped in `<untrusted-repository-content>` tags in `apps/web/src/state/ai-store.ts` - keep both when adding new context sources; don't inject raw repository content into a prompt without that wrapping.
+
 ### Cross-origin isolation
 
 `SharedArrayBuffer`/threaded WASM need `Cross-Origin-Opener-Policy: same-origin` + `Cross-Origin-Embedder-Policy: require-corp`, set in two independent places that must be kept in sync: the dev-server plugin in `apps/web/vite.config.ts` and `infra/nginx.conf` for production. If you add a build step or deployment path, it needs these headers too.
