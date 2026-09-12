@@ -71,9 +71,10 @@
   border: none;
   background: transparent;
   color: var(--knox-text-tertiary);
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  width: 22px;
+  height: 22px;
+  margin: 0 -2px 0 0;
+  border-radius: var(--knox-radius-sm);
   cursor: pointer;
   flex-shrink: 0;
   display: flex;

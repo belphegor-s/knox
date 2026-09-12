@@ -33,7 +33,7 @@ export function TabStrip({ onCloseRequested }: { onCloseRequested: (path: string
               onCloseRequested(tab.path, tab);
             }}
           >
-            <X size={13} strokeWidth={2} />
+            <X size={15} strokeWidth={2} />
           </button>
         </div>
       ))}
