@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useWorkspaceStore } from "../state/workspace-store";
 import { startSessionAutosave, listRecentWorkspaces, openWorkspace } from "../services/workspace-controller";
+import { MobileNotice } from "./MobileNotice";
 import { Welcome } from "./Welcome";
 import { Shell } from "./Shell";
 
@@ -27,26 +28,23 @@ export function App(): React.ReactElement {
     };
   }, []);
 
-  if (phase === "ready" && metadata && fs) {
-    return <Shell fs={fs} metadata={metadata} />;
-  }
-
-  if (phase === "error" && error) {
-    return (
-      <div className="knox-app-loading knox-app-loading--error" role="alert">
-        <p>Couldn't open this workspace.</p>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
-  if (!restoreChecked || phase === "loading") {
-    return (
-      <div className="knox-app-loading" role="status">
-        Opening workspace…
-      </div>
-    );
-  }
-
-  return <Welcome />;
+  return (
+    <>
+      <MobileNotice />
+      {phase === "ready" && metadata && fs ? (
+        <Shell fs={fs} metadata={metadata} />
+      ) : phase === "error" && error ? (
+        <div className="knox-app-loading knox-app-loading--error" role="alert">
+          <p>Couldn't open this workspace.</p>
+          <p>{error}</p>
+        </div>
+      ) : !restoreChecked || phase === "loading" ? (
+        <div className="knox-app-loading" role="status">
+          Opening workspace…
+        </div>
+      ) : (
+        <Welcome />
+      )}
+    </>
+  );
 }

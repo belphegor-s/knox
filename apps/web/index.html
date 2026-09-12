@@ -107,22 +107,36 @@
         overflow-x: hidden;
         position: relative;
       }
-      /* A fixed print-grid backdrop, not decoration bolted on top - this is the one
-         structural visual motif the whole page is built around. */
-      body::before {
+      /* Editorial column grid, not a decorative texture: two vertical rules marking the
+         content column's edges (visible in the margin on wide viewports, self-hiding on
+         narrow ones since the calc() lands off-screen), plus a horizontal rule between
+         every major section. This is the actual structure the page is built on. */
+      body::before,
+      body::after {
         content: "";
         position: fixed;
-        inset: 0;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--border);
         z-index: 0;
         pointer-events: none;
-        background-image: repeating-linear-gradient(90deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 120px),
-          repeating-linear-gradient(0deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 120px);
+      }
+      body::before {
+        left: calc(50% - (var(--max-w) / 2) - 24px);
+      }
+      body::after {
+        left: calc(50% + (var(--max-w) / 2) + 24px);
       }
       nav,
       main,
       footer {
         position: relative;
         z-index: 1;
+      }
+      .section + .section,
+      #features {
+        border-top: 1px solid var(--border);
       }
       img {
         max-width: 100%;
@@ -266,7 +280,12 @@
       }
       .orb-canvas {
         position: absolute;
-        top: -40px;
+        /* The shader's visible glow only fills the inner ~55% of this box's radius (see
+           orb.js's falloff) - positioned so that visible portion sits entirely above the
+           headline, never behind it. A glow bright enough to see on a white background
+           was, correctly, called out as hurting text legibility when it overlapped text -
+           moving it clear of the text is the actual fix, not further color tuning. */
+        top: -430px;
         left: 50%;
         transform: translateX(-50%);
         width: 560px;
@@ -567,7 +586,7 @@
         <canvas class="orb-canvas" id="orb" aria-hidden="true"></canvas>
         <span class="eyebrow">local-first &middot; browser-native</span>
         <h1>A real IDE that lives<br />entirely in <span>your browser</span>.</h1>
-        <p class="hero-sub">Real files, real Git, and a real terminal. No install, no account, nothing running on a server until you ask it to.</p>
+        <p class="hero-sub">Real files. Real Git. Real terminal. Nothing installed, nothing signed up for.</p>
         <div class="hero-ctas">
           <a class="btn btn-primary btn-lg" href="/app/">Open Knox</a>
           <a class="btn btn-ghost btn-lg" href="#features">See what's real</a>
@@ -583,7 +602,6 @@
         <div class="section-head fade">
           <span class="eyebrow">what's real</span>
           <h2>Every panel here runs for real</h2>
-          <p>Open the file explorer, run a command, commit a change. It's the same Knox you'd actually work in, not a tour of it.</p>
         </div>
         <div class="grid fade">
           <div class="card card--half">

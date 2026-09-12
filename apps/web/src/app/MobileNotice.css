@@ -1,0 +1,50 @@
+.knox-mobile-notice {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--knox-bg-0);
+}
+.knox-mobile-notice__card {
+  max-width: 340px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.knox-mobile-notice__mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+.knox-mobile-notice__card h1 {
+  font-size: 18px;
+  font-weight: 650;
+  color: var(--knox-text-primary);
+  margin: 0 0 10px;
+  letter-spacing: -0.01em;
+}
+.knox-mobile-notice__card p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--knox-text-secondary);
+  margin: 0 0 24px;
+}
+.knox-mobile-notice__card button {
+  appearance: none;
+  border: 1px solid var(--knox-border);
+  background: var(--knox-bg-2);
+  color: var(--knox-text-secondary);
+  font-size: 13px;
+  padding: 9px 16px;
+  border-radius: var(--knox-radius-md);
+  cursor: pointer;
+}
+.knox-mobile-notice__card button:hover {
+  border-color: var(--knox-border-strong);
+  color: var(--knox-text-primary);
+}

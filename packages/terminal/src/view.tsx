@@ -29,7 +29,7 @@ export function TerminalView({ workspaceId, fsBackend, directoryHandle }: Termin
     const term = new Terminal({
       fontFamily: 'ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace',
       fontSize: 13,
-      theme: { background: "#0e0f11", foreground: "#d8dadd", cursor: "#c9a567" },
+      theme: { background: "#0e0f11", foreground: "#d8dadd", cursor: "#c1602f" },
       cursorBlink: true,
       convertEol: true,
     });

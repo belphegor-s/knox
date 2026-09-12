@@ -4,8 +4,8 @@
  * consistently rather than per-component ad hoc colors.
  */
 :root {
-  --knox-accent: #c9a567;
-  --knox-accent-fg: #14110a;
+  --knox-accent: #c1602f;
+  --knox-accent-fg: #fff6f0;
   --knox-danger: #d9776b;
   --knox-warning: #d3a54b;
   --knox-success: #8fb37a;
