@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       golang-go \
       rustc \
       coreutils \
+      awscli \
     && rm -rf /var/lib/apt/lists/*
 
 COPY runner/knox-run /usr/local/bin/knox-run

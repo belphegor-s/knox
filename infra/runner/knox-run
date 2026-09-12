@@ -1,8 +1,19 @@
 #!/bin/sh
-# Entrypoint for the knox-runner image. Reads source from stdin, writes it to the given
-# filename under /workspace, compiles it if the language needs that, then runs it with a
-# wall-clock timeout. This is the ONLY thing this image's ENTRYPOINT ever does - it never
-# takes a shell command from the caller, only a language id and a filename.
+# Entrypoint for the knox-runner image. Two completely separate paths, chosen by whether
+# $CODE_S3_URI is set - kept as two full branches rather than one merged one so the original,
+# already-verified local path (docker-runner.ts) can never be subtly changed by ECS-only needs.
+#
+# Local (docker-runner.ts): code piped via stdin, output read directly off this process's own
+# stdout/stderr pipes by the host. Unchanged from the original design - still `exec`s straight
+# into the timeout/compiler/interpreter so signals (docker stop's SIGTERM) reach the real
+# process directly, not an intermediate shell.
+#
+# ECS (ecs-runner.ts): ecs:RunTask has no equivalent of `docker run -i` - a Fargate task can't
+# receive piped stdin after it starts, and nothing polls its stdout/stderr live. So code is
+# fetched from S3 instead, and stdout/stderr are captured to files and uploaded back to S3 for
+# the worker to read once the task reaches STOPPED (see docs/cloud-runtime.md). Also echoed to
+# this process's own stdout/stderr so CloudWatch has a live copy for debugging only - the S3
+# objects are what ecs-runner.ts actually reads.
 set -eu
 
 LANGUAGE="$1"
@@ -10,36 +21,90 @@ FILENAME="$2"
 RUN_TIMEOUT=10
 
 cd /workspace
-cat > "$FILENAME"
 
-case "$LANGUAGE" in
-  python)
-    exec timeout "$RUN_TIMEOUT" python3 "$FILENAME"
-    ;;
-  c)
-    gcc "$FILENAME" -O2 -o /tmp/a.out
-    exec timeout "$RUN_TIMEOUT" /tmp/a.out
-    ;;
-  cpp)
-    g++ "$FILENAME" -O2 -std=c++17 -o /tmp/a.out
-    exec timeout "$RUN_TIMEOUT" /tmp/a.out
-    ;;
-  java)
-    CLASSNAME=$(basename "$FILENAME" .java)
-    javac -d /tmp "$FILENAME"
-    exec timeout "$RUN_TIMEOUT" java -cp /tmp "$CLASSNAME"
-    ;;
-  go)
-    export GOCACHE=/tmp/gocache
-    export GOPATH=/tmp/gopath
-    exec timeout "$RUN_TIMEOUT" go run "$FILENAME"
-    ;;
-  rust)
-    rustc -O "$FILENAME" -o /tmp/a.out
-    exec timeout "$RUN_TIMEOUT" /tmp/a.out
-    ;;
-  *)
-    echo "Unsupported language: $LANGUAGE" >&2
-    exit 1
-    ;;
-esac
+run_program() {
+  case "$LANGUAGE" in
+    python)
+      timeout "$RUN_TIMEOUT" python3 "$FILENAME"
+      ;;
+    c)
+      gcc "$FILENAME" -O2 -o /tmp/a.out
+      timeout "$RUN_TIMEOUT" /tmp/a.out
+      ;;
+    cpp)
+      g++ "$FILENAME" -O2 -std=c++17 -o /tmp/a.out
+      timeout "$RUN_TIMEOUT" /tmp/a.out
+      ;;
+    java)
+      CLASSNAME=$(basename "$FILENAME" .java)
+      javac -d /tmp "$FILENAME"
+      timeout "$RUN_TIMEOUT" java -cp /tmp "$CLASSNAME"
+      ;;
+    go)
+      export GOCACHE=/tmp/gocache
+      export GOPATH=/tmp/gopath
+      timeout "$RUN_TIMEOUT" go run "$FILENAME"
+      ;;
+    rust)
+      rustc -O "$FILENAME" -o /tmp/a.out
+      timeout "$RUN_TIMEOUT" /tmp/a.out
+      ;;
+    *)
+      echo "Unsupported language: $LANGUAGE" >&2
+      return 1
+      ;;
+  esac
+}
+
+if [ -z "${CODE_S3_URI:-}" ]; then
+  cat > "$FILENAME"
+  # Every compile step below is its OWN statement, never combined with `&&` before the
+  # `exec` - `cmd1 && cmd2` makes cmd1's failure exempt from `set -e` (it isn't the last
+  # command in the list), so a failing compile would silently fall through past this whole
+  # `if` into the ECS-only code below instead of stopping here. Hit this exact bug once.
+  case "$LANGUAGE" in
+    python)
+      exec timeout "$RUN_TIMEOUT" python3 "$FILENAME"
+      ;;
+    c)
+      gcc "$FILENAME" -O2 -o /tmp/a.out
+      exec timeout "$RUN_TIMEOUT" /tmp/a.out
+      ;;
+    cpp)
+      g++ "$FILENAME" -O2 -std=c++17 -o /tmp/a.out
+      exec timeout "$RUN_TIMEOUT" /tmp/a.out
+      ;;
+    java)
+      CLASSNAME=$(basename "$FILENAME" .java)
+      javac -d /tmp "$FILENAME"
+      exec timeout "$RUN_TIMEOUT" java -cp /tmp "$CLASSNAME"
+      ;;
+    go)
+      export GOCACHE=/tmp/gocache
+      export GOPATH=/tmp/gopath
+      exec timeout "$RUN_TIMEOUT" go run "$FILENAME"
+      ;;
+    rust)
+      rustc -O "$FILENAME" -o /tmp/a.out
+      exec timeout "$RUN_TIMEOUT" /tmp/a.out
+      ;;
+    *)
+      echo "Unsupported language: $LANGUAGE" >&2
+      exit 1
+      ;;
+  esac
+fi
+
+# --- ECS mode below: only reached when CODE_S3_URI is set ---
+aws s3 cp "$CODE_S3_URI" "$FILENAME" --only-show-errors
+
+set +e
+run_program >/tmp/stdout.log 2>/tmp/stderr.log
+EXIT_CODE=$?
+set -e
+
+aws s3 cp /tmp/stdout.log "${OUTPUT_S3_PREFIX}stdout.log" --only-show-errors
+aws s3 cp /tmp/stderr.log "${OUTPUT_S3_PREFIX}stderr.log" --only-show-errors
+cat /tmp/stdout.log
+cat /tmp/stderr.log >&2
+exit "$EXIT_CODE"
