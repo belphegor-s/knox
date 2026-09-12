@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "pnpm --filter @knox/web dev",
     "dev:api": "pnpm --filter @knox/api dev",
+    "dev:worker": "pnpm --filter @knox/worker dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
@@ -20,5 +21,8 @@
   },
   "devDependencies": {
     "typescript": "5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }
