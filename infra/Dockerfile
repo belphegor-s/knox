@@ -36,7 +36,16 @@ RUN pnpm --filter @knox/web build
 FROM nginx:1.27-alpine AS runtime
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build /repo/apps/web/dist /usr/share/nginx/html
-COPY infra/nginx.conf /etc/nginx/conf.d/default.conf
+# Template, not a static file: the base image's own entrypoint (20-envsubst-on-templates.sh)
+# envsubst's every *.template under /etc/nginx/templates/ into /etc/nginx/conf.d/ at container
+# start, substituting real environment variables - lets KNOX_API_UPSTREAM be overridden per
+# deployment (e.g. a separately-deployed api/worker app's public URL) without a rebuild, while
+# defaulting to the Docker-DNS name the self-hosted docker-compose.yml path actually resolves.
+# Safe against nginx's own $request_uri-style variables: those are lowercase, environment
+# variables are conventionally uppercase, so envsubst (which substitutes by variable NAME) never
+# touches them as long as nothing uppercase happens to collide.
+COPY infra/nginx.conf /etc/nginx/templates/default.conf.template
+ENV KNOX_API_UPSTREAM=http://api:8081
 
 # Coolify/most PaaS route by container port; 8080 avoids requiring root for port 80.
 EXPOSE 8080
