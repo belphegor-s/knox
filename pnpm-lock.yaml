@@ -9,7 +9,7 @@ importers:
   .:
     devDependencies:
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
   apps/web:
@@ -36,56 +36,56 @@ importers:
         specifier: workspace:*
         version: link:../../packages/terminal
       lucide-react:
-        specifier: ^0.469.0
+        specifier: 0.469.0
         version: 0.469.0(react@18.3.1)
       react:
-        specifier: ^18.3.1
+        specifier: 18.3.1
         version: 18.3.1
       react-dom:
-        specifier: ^18.3.1
+        specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
       react-window:
-        specifier: ^1.8.10
+        specifier: 1.8.11
         version: 1.8.11(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       workbox-precaching:
-        specifier: ^7.1.0
+        specifier: 7.4.1
         version: 7.4.1
       workbox-routing:
-        specifier: ^7.1.0
+        specifier: 7.4.1
         version: 7.4.1
       zustand:
-        specifier: ^5.0.1
+        specifier: 5.0.15
         version: 5.0.15(@types/react@18.3.31)(react@18.3.1)
     devDependencies:
       '@testing-library/react':
-        specifier: ^16.0.1
+        specifier: 16.3.3
         version: 16.3.3(@testing-library/dom@10.4.1)(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@types/react':
-        specifier: ^18.3.12
+        specifier: 18.3.31
         version: 18.3.31
       '@types/react-dom':
-        specifier: ^18.3.1
+        specifier: 18.3.7
         version: 18.3.7(@types/react@18.3.31)
       '@types/react-window':
-        specifier: ^1.8.8
+        specifier: 1.8.8
         version: 1.8.8
       '@vitejs/plugin-react':
-        specifier: ^4.3.3
+        specifier: 4.7.0
         version: 4.7.0(vite@5.4.21(terser@5.51.2))
       jsdom:
-        specifier: ^25.0.1
+        specifier: 25.0.1
         version: 25.0.1
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
       vite:
-        specifier: ^5.4.11
+        specifier: 5.4.21
         version: 5.4.21(terser@5.51.2)
       vite-plugin-pwa:
-        specifier: ^0.20.5
+        specifier: 0.20.5
         version: 0.20.5(vite@5.4.21(terser@5.51.2))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1)
       vitest:
-        specifier: ^2.1.4
+        specifier: 2.1.9
         version: 2.1.9(jsdom@25.0.1)(terser@5.51.2)
 
   packages/ai:
@@ -95,10 +95,10 @@ importers:
         version: link:../shared
     devDependencies:
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
       vitest:
-        specifier: ^2.1.4
+        specifier: 2.1.9
         version: 2.1.9(jsdom@25.0.1)(terser@5.51.2)
 
   packages/editor:
@@ -107,23 +107,23 @@ importers:
         specifier: workspace:*
         version: link:../shared
       monaco-editor:
-        specifier: ^0.52.0
+        specifier: 0.52.2
         version: 0.52.2
       react:
-        specifier: ^18.3.1
+        specifier: 18.3.1
         version: 18.3.1
       react-dom:
-        specifier: ^18.3.1
+        specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@types/react':
-        specifier: ^18.3.12
+        specifier: 18.3.31
         version: 18.3.31
       '@types/react-dom':
-        specifier: ^18.3.1
+        specifier: 18.3.7
         version: 18.3.7(@types/react@18.3.31)
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/filesystem:
@@ -133,13 +133,13 @@ importers:
         version: link:../shared
     devDependencies:
       fake-indexeddb:
-        specifier: ^6.0.0
+        specifier: 6.2.5
         version: 6.2.5
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
       vitest:
-        specifier: ^2.1.4
+        specifier: 2.1.9
         version: 2.1.9(jsdom@25.0.1)(terser@5.51.2)
 
   packages/git:
@@ -151,26 +151,26 @@ importers:
         specifier: workspace:*
         version: link:../shared
       buffer:
-        specifier: ^6.0.3
+        specifier: 6.0.3
         version: 6.0.3
       diff:
-        specifier: ^5.2.0
+        specifier: 5.2.2
         version: 5.2.2
       isomorphic-git:
-        specifier: ^1.27.2
+        specifier: 1.42.2
         version: 1.42.2
     devDependencies:
       '@types/diff':
-        specifier: ^5.2.3
+        specifier: 5.2.3
         version: 5.2.3
       fake-indexeddb:
-        specifier: ^6.0.0
+        specifier: 6.2.5
         version: 6.2.5
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
       vitest:
-        specifier: ^2.1.4
+        specifier: 2.1.9
         version: 2.1.9(jsdom@25.0.1)(terser@5.51.2)
 
   packages/runtime:
@@ -179,7 +179,7 @@ importers:
         specifier: workspace:*
         version: link:../shared
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/search:
@@ -192,13 +192,13 @@ importers:
         version: link:../shared
     devDependencies:
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/shared:
     devDependencies:
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/terminal:
@@ -213,29 +213,29 @@ importers:
         specifier: workspace:*
         version: link:../shared
       '@xterm/addon-fit':
-        specifier: ^0.10.0
+        specifier: 0.10.0
         version: 0.10.0(@xterm/xterm@5.5.0)
       '@xterm/xterm':
-        specifier: ^5.5.0
+        specifier: 5.5.0
         version: 5.5.0
       react:
-        specifier: ^18.3.1
+        specifier: 18.3.1
         version: 18.3.1
       react-dom:
-        specifier: ^18.3.1
+        specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@types/react':
-        specifier: ^18.3.12
+        specifier: 18.3.31
         version: 18.3.31
       fake-indexeddb:
-        specifier: ^6.0.0
+        specifier: 6.2.5
         version: 6.2.5
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
       vitest:
-        specifier: ^2.1.4
+        specifier: 2.1.9
         version: 2.1.9(jsdom@25.0.1)(terser@5.51.2)
 
 packages:

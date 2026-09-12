@@ -18,17 +18,17 @@
     "@knox/shared": "workspace:*",
     "@knox/filesystem": "workspace:*",
     "@knox/runtime": "workspace:*",
-    "@xterm/xterm": "^5.5.0",
-    "@xterm/addon-fit": "^0.10.0"
+    "@xterm/xterm": "5.5.0",
+    "@xterm/addon-fit": "0.10.0"
   },
   "peerDependencies": {
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
-    "@types/react": "^18.3.12",
-    "vitest": "^2.1.4",
-    "fake-indexeddb": "^6.0.0"
+    "typescript": "5.9.3",
+    "@types/react": "18.3.31",
+    "vitest": "2.1.9",
+    "fake-indexeddb": "6.2.5"
   }
 }
