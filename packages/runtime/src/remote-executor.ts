@@ -23,7 +23,15 @@ const EXECUTE_ENDPOINT = "/api/execute";
 /** Sends untrusted source to the optional cloud execution backend (apps/api -> apps/worker ->
  * a sandboxed container) for languages with no local WASM runtime. Purely additive: if nothing
  * is deployed at EXECUTE_ENDPOINT, this fails fast and cleanly rather than hanging. */
-export async function runRemote({ language, filename, code, onOutput, timeoutMs = 30_000 }: RemoteRunOptions): Promise<RemoteRunResult> {
+// 100s, not 30s: apps/api doesn't flush response headers to the browser until the upstream
+// worker produces its first body byte (see apps/api/src/server.ts), and the ECS Fargate
+// execution backend (apps/worker/src/ecs-runner.ts) doesn't produce ANY output until the whole
+// task finishes - cold start alone commonly takes 10-30s, on top of the program's own run
+// time. A shorter timeout here aborts a request that was genuinely still succeeding server-side
+// (confirmed: the same request completes in ~65-70s when made directly, no timeout). Matches
+// the other ceilings already in place for this path: nginx's proxy_read_timeout (90s) and
+// ecs-runner.ts's own TASK_TIMEOUT_MS (90s) - this just needs to be at least that large.
+export async function runRemote({ language, filename, code, onOutput, timeoutMs = 100_000 }: RemoteRunOptions): Promise<RemoteRunResult> {
   const start = performance.now();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);

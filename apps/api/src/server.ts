@@ -33,6 +33,12 @@ app.post("/api/execute", async (req, res) => {
 
   res.status(upstream.status);
   res.setHeader("Content-Type", upstream.headers.get("content-type") ?? "application/json");
+  // Without this, Express holds these headers until the first res.write() below - which for a
+  // backend that batches all its output until the run finishes (apps/worker/src/ecs-runner.ts,
+  // as opposed to docker-runner.ts's live stdout/stderr piping) could be a minute or more away.
+  // A client can't distinguish "server never responded" from "server is still computing" until
+  // it at least sees these, so flush them immediately once the upstream is confirmed reachable.
+  res.flushHeaders();
 
   if (!upstream.body) {
     res.end();
