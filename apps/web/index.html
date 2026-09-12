@@ -271,35 +271,12 @@
         border-color: var(--border-strong);
       }
 
-      /* ---------- hero + orb ---------- */
+      /* ---------- hero ---------- */
       .hero {
         position: relative;
         padding: 88px 24px 64px;
         text-align: center;
         isolation: isolate;
-      }
-      .orb-canvas {
-        position: absolute;
-        /* The shader's visible glow only fills the inner ~55% of this box's radius (see
-           orb.js's falloff), so the box is much bigger than what actually shows. Shrunk
-           further so the visible glow can sit lower - closer to the eyebrow text - while
-           its bottom edge still clears the h1 (checked against a real measurement of the
-           h1's position, not eyeballed). */
-        top: -70px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 320px;
-        height: 320px;
-        max-width: 90vw;
-        pointer-events: none;
-        z-index: 0;
-      }
-      /* Excludes .orb-canvas on purpose - it needs to stay position:absolute, and equal
-         specificity here would otherwise let this rule win by source order and pull it
-         back into normal document flow (a real bug this hit once). */
-      .hero > *:not(.orb-canvas) {
-        position: relative;
-        z-index: 1;
       }
       .eyebrow {
         display: block;
@@ -587,7 +564,6 @@
 
     <main id="top">
       <section class="hero">
-        <canvas class="orb-canvas" id="orb" aria-hidden="true"></canvas>
         <span class="eyebrow">local-first &middot; browser-native</span>
         <h1>A real IDE that lives<br />entirely in <span>your browser</span>.</h1>
         <p class="hero-sub">Real files. Real Git. Real terminal. Nothing installed, nothing signed up for.</p>
@@ -743,6 +719,5 @@
         }
       })();
     </script>
-    <script type="module" src="./orb.js"></script>
   </body>
 </html>
