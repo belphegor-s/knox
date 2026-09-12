@@ -20,13 +20,25 @@ export function BottomPanel(): React.ReactElement | null {
 
   const collapsed = height <= PANEL_COLLAPSED_HEIGHT;
 
-  function handleDrag(next: number): void {
-    setHeight(next < SNAP_THRESHOLD ? PANEL_COLLAPSED_HEIGHT : next);
-  }
-
+  // Live drag shows the raw dragged height with no snapping - snapping-while-dragging forced
+  // every intermediate frame below SNAP_THRESHOLD back to exactly PANEL_COLLAPSED_HEIGHT, so a
+  // short drag gesture showed zero visual movement until it crossed the threshold in one
+  // continuous motion, indistinguishable from the handle not responding at all. The snap only
+  // applies once, on release (onCommit), to wherever the drag actually ended up.
+  //
   // The handle still needs to be draggable FROM fully collapsed, so its own range floor is
-  // the collapsed height, not the expanded one - only the snap in handleDrag distinguishes them.
-  const resize = useDragResize({ axis: "y", grows: "start", value: height, min: PANEL_COLLAPSED_HEIGHT, max: 640, onChange: handleDrag });
+  // the collapsed height, not the expanded one - only the release-time snap distinguishes them.
+  const resize = useDragResize({
+    axis: "y",
+    grows: "start",
+    value: height,
+    min: PANEL_COLLAPSED_HEIGHT,
+    max: 640,
+    onChange: setHeight,
+    onCommit: (final) => {
+      if (final < SNAP_THRESHOLD) setHeight(PANEL_COLLAPSED_HEIGHT);
+    },
+  });
 
   // Once the panel has been opened at least once, keep it mounted (hidden via CSS, not
   // unmounted) so the terminal's xterm instance, worker, and shell session (cwd, history)

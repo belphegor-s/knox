@@ -64,8 +64,17 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
   setBottomPanelTab: (tab) => set({ bottomPanelTab: tab }),
   toggleTerminalFocus: () => {
     const s = get();
-    if (s.panelVisible && s.bottomPanelTab === "terminal") set({ panelVisible: false, panelMaximized: false });
-    else set({ panelVisible: true, bottomPanelTab: "terminal" });
+    if (s.panelVisible && s.bottomPanelTab === "terminal") {
+      set({ panelVisible: false, panelMaximized: false });
+      return;
+    }
+    // setPanelVisible(false) (the panel's own close button) never touches panelHeight, so a
+    // panel that was collapsed before being closed stays at PANEL_COLLAPSED_HEIGHT in the
+    // store - reopening it here without restoring left it looking stuck at "only the tabs
+    // bar visible" with no indication why, unlike togglePanelCollapsed (Cmd+J) which already
+    // handles this same restoration.
+    const restoredHeight = s.panelHeight <= PANEL_COLLAPSED_HEIGHT ? Math.max(s.lastExpandedPanelHeight, PANEL_EXPANDED_MIN_HEIGHT) : s.panelHeight;
+    set({ panelVisible: true, bottomPanelTab: "terminal", panelHeight: restoredHeight });
   },
   // Reads fresh state via get() rather than closing over a render-time value - a command bound
   // to a keyboard shortcut can fire before React has re-rendered with the latest store value.
