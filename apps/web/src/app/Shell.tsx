@@ -6,6 +6,7 @@ import { Explorer } from "./Explorer/Explorer";
 import { EditorArea } from "./EditorArea/EditorArea";
 import { GitPanel } from "./Git/GitPanel";
 import { DiffView } from "./Git/DiffView";
+import { SearchPanel } from "./Search/SearchPanel";
 import { BottomPanel } from "./BottomPanel/BottomPanel";
 import { AiPanel } from "./AiPanel/AiPanel";
 import { StatusBar } from "./StatusBar";
@@ -13,6 +14,7 @@ import { PaletteHost } from "./Palette/PaletteHost";
 import { useLayoutStore } from "../state/layout-store";
 import { useEditorStore } from "../state/editor-store";
 import { useGitStore } from "../state/git-store";
+import { useSearchStore } from "../state/search-store";
 import { useDragResize } from "../hooks/useDragResize";
 import { commandRegistry } from "../commands/registry";
 import { getDirectoryHandle } from "../services/workspace-persistence";
@@ -35,13 +37,19 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
   const viewingDiff = useGitStore((s) => s.viewingDiff);
   const connectGit = useGitStore((s) => s.connect);
   const resetGit = useGitStore((s) => s.reset);
+  const connectSearch = useSearchStore((s) => s.connect);
+  const resetSearch = useSearchStore((s) => s.reset);
 
   useEffect(() => {
     void (async () => {
       const handle = metadata.fsBackend === "file-system-access" ? await getDirectoryHandle(metadata.id) : undefined;
       await connectGit(metadata.id, metadata.fsBackend, handle);
+      await connectSearch(metadata.id, metadata.fsBackend, handle);
     })();
-    return () => resetGit();
+    return () => {
+      resetGit();
+      resetSearch();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metadata.id]);
 
@@ -103,6 +111,15 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         category: "File",
         run: () => useEditorStore.getState().closeAll(),
       },
+      {
+        id: "view.showSearch",
+        title: "View: Show Search",
+        category: "Navigation",
+        shortcut: "⌘⇧F",
+        run: () => {
+          useLayoutStore.getState().setActiveActivityView("search");
+        },
+      },
     ]);
   }, [sidebarVisible, panelVisible, aiPanelVisible, setSidebarVisible, setPanelVisible, setAiPanelVisible, toggleDistractionFree]);
 
@@ -113,6 +130,9 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
       if (e.key.toLowerCase() === "b" && !e.shiftKey) {
         e.preventDefault();
         void commandRegistry.run("view.toggleSidebar");
+      } else if (e.key.toLowerCase() === "f" && e.shiftKey) {
+        e.preventDefault();
+        void commandRegistry.run("view.showSearch");
       } else if (e.key === "`") {
         e.preventDefault();
         void commandRegistry.run("view.toggleTerminal");
@@ -133,7 +153,13 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         {!distractionFree && sidebarVisible && (
           <>
             <div className="knox-shell__sidebar" style={{ width: sidebarWidth }}>
-              {activeActivityView === "git" ? <GitPanel /> : <Explorer fs={fs} workspaceName={metadata.name} />}
+              {activeActivityView === "git" ? (
+                <GitPanel />
+              ) : activeActivityView === "search" ? (
+                <SearchPanel />
+              ) : (
+                <Explorer fs={fs} workspaceName={metadata.name} />
+              )}
             </div>
             <div className="knox-shell__splitter" onPointerDown={sidebarResize.onPointerDown} />
           </>

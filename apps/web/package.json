@@ -19,6 +19,7 @@
     "@knox/editor": "workspace:*",
     "@knox/git": "workspace:*",
     "@knox/terminal": "workspace:*",
+    "@knox/search": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.1",

@@ -4,7 +4,7 @@ import "./ActivityBar.css";
 
 const ITEMS: { id: PanelLayout["activeActivityView"]; label: string; glyph: string; available: boolean }[] = [
   { id: "explorer", label: "Explorer", glyph: "▤", available: true },
-  { id: "search", label: "Search - arrives with the search package", glyph: "⌕", available: false },
+  { id: "search", label: "Search", glyph: "⌕", available: true },
   { id: "git", label: "Source Control", glyph: "⑂", available: true },
   { id: "debug", label: "Run & Debug - arrives with the runtime package", glyph: "▷", available: false },
   { id: "extensions", label: "Extensions", glyph: "⬡", available: false },

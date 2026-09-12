@@ -10,7 +10,7 @@ interface EditorState {
   activePath: string | null;
 
   /** Opens a file. Non-preview opens (double-click, edit) pin the tab and replace any preview tab. */
-  openFile(path: string, opts?: { preview?: boolean }): void;
+  openFile(path: string, opts?: { preview?: boolean; line?: number; column?: number }): void;
   closeTab(path: string): void;
   closeOthers(path: string): void;
   closeAll(): void;
@@ -42,16 +42,19 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const preview = opts?.preview ?? false;
     const { tabs } = get();
     const existing = tabs.find((t) => t.path === path);
+    const withCursor = (tab: EditorTab): EditorTab =>
+      opts?.line ? { ...tab, cursorLine: opts.line, cursorColumn: opts.column ?? 1 } : tab;
     if (existing) {
-      set({ activePath: path });
+      set({ tabs: tabs.map((t) => (t.path === path ? withCursor(t) : t)), activePath: path });
       return;
     }
+    const newTab = withCursor(emptyTab(path, preview));
     if (preview) {
       // Replace any existing (unpinned) preview tab rather than accumulating tabs.
       const withoutPreview = tabs.filter((t) => !(t.preview && !t.pinned));
-      set({ tabs: [...withoutPreview, emptyTab(path, true)], activePath: path });
+      set({ tabs: [...withoutPreview, newTab], activePath: path });
     } else {
-      set({ tabs: [...tabs, emptyTab(path, false)], activePath: path });
+      set({ tabs: [...tabs, newTab], activePath: path });
     }
   },
 
