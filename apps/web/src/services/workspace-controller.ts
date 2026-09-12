@@ -2,7 +2,7 @@ import { createFileSystem, detectFsCapabilities, FileSystemAccessBackend } from 
 import { createId, knoxEvents, type WorkspaceMetadata } from "@knox/shared";
 import { useWorkspaceStore } from "../state/workspace-store";
 import { useEditorStore, type EditorTab } from "../state/editor-store";
-import { useLayoutStore, DEFAULT_LAYOUT } from "../state/layout-store";
+import { useLayoutStore, DEFAULT_LAYOUT, getLayoutSnapshot } from "../state/layout-store";
 import * as store from "./workspace-persistence";
 
 const STARTER_README = `# New project
@@ -115,20 +115,11 @@ export function startSessionAutosave(): () => void {
     const ws = useWorkspaceStore.getState();
     if (ws.phase !== "ready" || !ws.metadata) return;
     const editor = useEditorStore.getState();
-    const layout = useLayoutStore.getState();
     void store.saveSession({
       workspaceId: ws.metadata.id,
       openTabs: editor.tabs,
       activeTabPath: editor.activePath,
-      layout: {
-        sidebarVisible: layout.sidebarVisible,
-        sidebarWidth: layout.sidebarWidth,
-        panelVisible: layout.panelVisible,
-        panelHeight: layout.panelHeight,
-        aiPanelVisible: layout.aiPanelVisible,
-        aiPanelWidth: layout.aiPanelWidth,
-        activeActivityView: layout.activeActivityView,
-      },
+      layout: getLayoutSnapshot(),
       updatedAt: Date.now(),
     });
   };

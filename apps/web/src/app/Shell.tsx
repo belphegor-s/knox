@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { debounce, type VirtualFileSystem, type WorkspaceMetadata } from "@knox/shared";
+import { KeyboardShortcutsHelp } from "./KeyboardShortcutsHelp";
 import { TitleBar } from "./TitleBar";
 import { ActivityBar } from "./ActivityBar";
 import { Explorer } from "./Explorer/Explorer";
@@ -39,6 +40,19 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
   const resetGit = useGitStore((s) => s.reset);
   const connectSearch = useSearchStore((s) => s.connect);
   const resetSearch = useSearchStore((s) => s.reset);
+  const toggleTerminalFocus = useLayoutStore((s) => s.toggleTerminalFocus);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
+
+  async function createUntitledFile(): Promise<void> {
+    let n = 1;
+    let path = `/untitled-${n}.txt`;
+    while (await fs.exists(path)) {
+      n++;
+      path = `/untitled-${n}.txt`;
+    }
+    await fs.writeFile(path, "");
+    useEditorStore.getState().openFile(path, { preview: false });
+  }
 
   useEffect(() => {
     void (async () => {
@@ -81,6 +95,13 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         title: "View: Toggle Terminal",
         category: "Terminal",
         shortcut: "⌘`",
+        run: toggleTerminalFocus,
+      },
+      {
+        id: "view.togglePanel",
+        title: "View: Toggle Panel",
+        category: "Panels",
+        shortcut: "⌘J",
         run: () => setPanelVisible(!panelVisible),
       },
       {
@@ -94,6 +115,13 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         title: "View: Toggle Distraction-Free Mode",
         category: "View",
         run: toggleDistractionFree,
+      },
+      {
+        id: "file.new",
+        title: "File: New File",
+        category: "File",
+        shortcut: "⌘N",
+        run: () => void createUntitledFile(),
       },
       {
         id: "file.closeEditor",
@@ -120,23 +148,42 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
           useLayoutStore.getState().setActiveActivityView("search");
         },
       },
+      {
+        id: "help.keyboardShortcuts",
+        title: "Help: Keyboard Shortcuts",
+        category: "View",
+        shortcut: "⌘⇧/",
+        run: () => setShortcutsHelpOpen(true),
+      },
     ]);
-  }, [sidebarVisible, panelVisible, aiPanelVisible, setSidebarVisible, setPanelVisible, setAiPanelVisible, toggleDistractionFree]);
+  }, [sidebarVisible, panelVisible, aiPanelVisible, toggleTerminalFocus, setSidebarVisible, setPanelVisible, setAiPanelVisible, toggleDistractionFree]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent): void {
       const mod = e.metaKey || e.ctrlKey;
       if (!mod) return;
-      if (e.key.toLowerCase() === "b" && !e.shiftKey) {
+      const key = e.key.toLowerCase();
+      if (key === "b" && !e.shiftKey) {
         e.preventDefault();
         void commandRegistry.run("view.toggleSidebar");
-      } else if (e.key.toLowerCase() === "f" && e.shiftKey) {
+      } else if (key === "j" && !e.shiftKey) {
+        e.preventDefault();
+        void commandRegistry.run("view.togglePanel");
+      } else if (key === "f" && e.shiftKey) {
         e.preventDefault();
         void commandRegistry.run("view.showSearch");
+      } else if (key === "/" && e.shiftKey) {
+        e.preventDefault();
+        void commandRegistry.run("help.keyboardShortcuts");
+      } else if (key === "n" && !e.shiftKey) {
+        // Browsers may reserve this for a new window; harmless to also try.
+        e.preventDefault();
+        void commandRegistry.run("file.new");
       } else if (e.key === "`") {
         e.preventDefault();
         void commandRegistry.run("view.toggleTerminal");
-      } else if (e.key.toLowerCase() === "w") {
+      } else if (key === "w") {
+        // Browsers may reserve plain ⌘W for closing the tab; ⌘⇧W is a guaranteed-safe alternate.
         e.preventDefault();
         void commandRegistry.run("file.closeEditor");
       }
@@ -179,6 +226,7 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
       </div>
       {!distractionFree && <StatusBar />}
       <PaletteHost />
+      {shortcutsHelpOpen && <KeyboardShortcutsHelp onClose={() => setShortcutsHelpOpen(false)} />}
     </div>
   );
 }

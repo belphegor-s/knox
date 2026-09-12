@@ -10,6 +10,9 @@ interface LayoutState extends PanelLayout {
   setAiPanelVisible(visible: boolean): void;
   setAiPanelWidth(width: number): void;
   setActiveActivityView(view: PanelLayout["activeActivityView"]): void;
+  setBottomPanelTab(tab: PanelLayout["bottomPanelTab"]): void;
+  /** Opens the panel on the Terminal tab if it isn't already the visible focus; otherwise closes the panel. Matches VS Code's Ctrl+`. */
+  toggleTerminalFocus(): void;
   toggleDistractionFree(): void;
   hydrate(layout: PanelLayout): void;
 }
@@ -22,9 +25,10 @@ export const DEFAULT_LAYOUT: PanelLayout = {
   aiPanelVisible: false,
   aiPanelWidth: 340,
   activeActivityView: "explorer",
+  bottomPanelTab: "terminal",
 };
 
-export const useLayoutStore = create<LayoutState>((set) => ({
+export const useLayoutStore = create<LayoutState>((set, get) => ({
   ...DEFAULT_LAYOUT,
   distractionFree: false,
   setSidebarVisible: (visible) => set({ sidebarVisible: visible }),
@@ -34,6 +38,12 @@ export const useLayoutStore = create<LayoutState>((set) => ({
   setAiPanelVisible: (visible) => set({ aiPanelVisible: visible }),
   setAiPanelWidth: (width) => set({ aiPanelWidth: Math.round(width) }),
   setActiveActivityView: (view) => set({ activeActivityView: view, sidebarVisible: true }),
+  setBottomPanelTab: (tab) => set({ bottomPanelTab: tab }),
+  toggleTerminalFocus: () => {
+    const s = get();
+    if (s.panelVisible && s.bottomPanelTab === "terminal") set({ panelVisible: false });
+    else set({ panelVisible: true, bottomPanelTab: "terminal" });
+  },
   toggleDistractionFree: () =>
     set((s) => ({
       distractionFree: !s.distractionFree,
@@ -51,5 +61,6 @@ export function getLayoutSnapshot(): PanelLayout {
     aiPanelVisible: s.aiPanelVisible,
     aiPanelWidth: s.aiPanelWidth,
     activeActivityView: s.activeActivityView,
+    bottomPanelTab: s.bottomPanelTab,
   };
 }

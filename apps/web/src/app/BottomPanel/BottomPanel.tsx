@@ -1,18 +1,16 @@
-import { useState } from "react";
 import { X } from "lucide-react";
 import { useLayoutStore } from "../../state/layout-store";
 import { useDragResize } from "../../hooks/useDragResize";
 import { TerminalPanel } from "./TerminalPanel";
 import "./BottomPanel.css";
 
-type Tab = "terminal" | "problems";
-
 export function BottomPanel(): React.ReactElement | null {
   const visible = useLayoutStore((s) => s.panelVisible);
   const height = useLayoutStore((s) => s.panelHeight);
   const setHeight = useLayoutStore((s) => s.setPanelHeight);
   const setVisible = useLayoutStore((s) => s.setPanelVisible);
-  const [tab, setTab] = useState<Tab>("terminal");
+  const tab = useLayoutStore((s) => s.bottomPanelTab);
+  const setTab = useLayoutStore((s) => s.setBottomPanelTab);
   const resize = useDragResize({ axis: "y", grows: "start", value: height, min: 120, max: 640, onChange: setHeight });
 
   if (!visible) return null;
