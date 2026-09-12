@@ -98,8 +98,8 @@ function start(gl) {
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
   const PALETTE = {
-    dark: { a: [0.7882, 0.6471, 0.4039], b: [0.11, 0.078, 0.039], alpha: 0.95 },
-    light: { a: [0.72, 0.5, 0.22], b: [0.87, 0.75, 0.5], alpha: 0.85 },
+    dark: { a: [0.7569, 0.3765, 0.1843], b: [0.102, 0.059, 0.039], alpha: 0.95 },
+    light: { a: [0.68, 0.32, 0.14], b: [0.941, 0.867, 0.816], alpha: 0.8 },
   };
 
   function currentTheme() {
