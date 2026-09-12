@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
@@ -72,6 +73,16 @@ export default defineConfig({
   build: {
     target: "es2022",
     sourcemap: true,
+    rollupOptions: {
+      // The marketing landing page is a fully separate static entry - no React, no app
+      // shell JS - built alongside the app itself so one `pnpm build` / one Docker image
+      // produces both. Served at /landing/ by nginx's default `try_files $uri $uri/
+      // /index.html` (the directory's own index.html resolves before the SPA fallback).
+      input: {
+        main: fileURLToPath(new URL("index.html", import.meta.url)),
+        landing: fileURLToPath(new URL("landing/index.html", import.meta.url)),
+      },
+    },
   },
   optimizeDeps: {
     exclude: ["@knox/filesystem"],
