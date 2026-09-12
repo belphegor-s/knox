@@ -210,7 +210,8 @@ export class Shell {
       case "help":
         write(
           "stdout",
-          "Commands: pwd cd ls ll cat echo mkdir touch rm cp mv grep find run <file.js|.ts> clear help\n",
+          "Commands: pwd cd ls ll cat echo mkdir touch rm cp mv grep find run <file.js|.ts> clear help\n" +
+            "Editing: Tab completes commands/paths, Ctrl+A/E, Ctrl+K/U, Option+Left/Right/Backspace, Ctrl+W, Up/Down history\n",
         );
         return 0;
       default:
