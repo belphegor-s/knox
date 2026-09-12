@@ -1,9 +1,9 @@
-# Minimal self-hosted deployment: one static-serving container. Everything
-# Knox needs for local-first editing (filesystem, Git, editor, session
-# persistence) runs entirely in the browser - there is no database or cache
-# to stand up for that. Postgres/Redis/object-storage services are left
-# commented below for when the optional cloud features (sync, collaboration,
-# auth, cloud execution) are built - see docs/cloud-runtime.md.
+# Minimal self-hosted deployment: `docker compose up web` alone is everything Knox needs for
+# local-first editing (filesystem, Git, editor, session persistence) - all of that runs in the
+# browser, no database or cache required. The api/worker/runner services below are the
+# OPTIONAL cloud execution path (Python/C/C++/Java/Go/Rust) - bring them up too
+# (`docker compose --profile cloud-execution up`) only if you want that. Nothing about the base
+# deployment depends on them; nginx's /api/ route degrades to a clean 502 if they're absent.
 services:
   web:
     build:
@@ -14,6 +14,56 @@ services:
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  # --- optional cloud execution (Python/C/C++/Java/Go/Rust) --------------------------------
+  runner:
+    profiles: ["cloud-execution"]
+    build:
+      context: .
+      dockerfile: runner.Dockerfile
+    image: knox-runner:latest
+    # This service never runs on its own - it only exists so `docker compose build` produces
+    # the image apps/worker's docker-runner.ts spawns sibling containers from.
+    entrypoint: ["true"]
+
+  worker:
+    profiles: ["cloud-execution"]
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    depends_on:
+      - runner
+    environment:
+      KNOX_RUNNER_IMAGE: knox-runner:latest
+    volumes:
+      # Docker-outside-of-Docker: this container has no daemon of its own and spawns every
+      # execution as a SIBLING container on the host via this socket, never nested inside
+      # itself. See apps/worker/src/docker-runner.ts and docs/security.md.
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8082/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+  api:
+    profiles: ["cloud-execution"]
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    depends_on:
+      - worker
+    environment:
+      KNOX_WORKER_URL: http://worker:8082
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/health"]
       interval: 30s
       timeout: 3s
       retries: 3

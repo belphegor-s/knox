@@ -59,6 +59,12 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    // Mirrors infra/nginx.conf's /api/ route in production: proxies to a locally-running
+    // apps/api (`pnpm dev:api`) if one happens to be up. Harmless when it isn't - requests
+    // just fail to connect the same way they'd 502 in production with nothing deployed.
+    proxy: {
+      "/api": "http://localhost:8081",
+    },
   },
   worker: {
     format: "es",
