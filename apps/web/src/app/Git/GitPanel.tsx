@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GitBranchPlus, Minus, Plus, Undo2 } from "lucide-react";
 import { useGitStore } from "../../state/git-store";
 import type { GitFileStatus } from "@knox/git";
 import "./GitPanel.css";
@@ -25,15 +26,15 @@ function FileRow({ file }: { file: GitFileStatus }): React.ReactElement {
       <span className="knox-git-row__actions" onClick={(e) => e.stopPropagation()}>
         {file.staged ? (
           <button title="Unstage" onClick={() => void unstage([file.path])}>
-            −
+            <Minus size={13} strokeWidth={2} />
           </button>
         ) : (
           <>
             <button title="Discard" onClick={() => void discard([`/${file.path}`])}>
-              ↺
+              <Undo2 size={13} strokeWidth={1.75} />
             </button>
             <button title="Stage" onClick={() => void stage([file.path])}>
-              +
+              <Plus size={13} strokeWidth={2} />
             </button>
           </>
         )}
@@ -100,8 +101,8 @@ export function GitPanel(): React.ReactElement {
             onBlur={() => setNewBranch(false)}
           />
         ) : (
-          <button title="New branch" onClick={() => setNewBranch(true)}>
-            +
+          <button className="knox-git__new-branch" title="New branch" onClick={() => setNewBranch(true)}>
+            <GitBranchPlus size={14} strokeWidth={1.75} />
           </button>
         )}
       </div>

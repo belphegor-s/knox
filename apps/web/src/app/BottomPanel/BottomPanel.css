@@ -34,6 +34,14 @@
   border-radius: var(--knox-radius-sm);
   cursor: pointer;
 }
+.knox-bottompanel__close {
+  width: 22px;
+  height: 22px;
+  padding: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .knox-bottompanel__tabs button:hover {
   color: var(--knox-text-primary);
   background: var(--knox-bg-hover);

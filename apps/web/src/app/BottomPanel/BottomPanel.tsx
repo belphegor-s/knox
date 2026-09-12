@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X } from "lucide-react";
 import { useLayoutStore } from "../../state/layout-store";
 import { useDragResize } from "../../hooks/useDragResize";
 import { TerminalPanel } from "./TerminalPanel";
@@ -27,8 +28,8 @@ export function BottomPanel(): React.ReactElement | null {
           Problems
         </button>
         <div className="knox-bottompanel__spacer" />
-        <button aria-label="Close panel" onClick={() => setVisible(false)}>
-          ✕
+        <button className="knox-bottompanel__close" aria-label="Close panel" onClick={() => setVisible(false)}>
+          <X size={14} strokeWidth={1.75} />
         </button>
       </div>
       <div className="knox-bottompanel__content">

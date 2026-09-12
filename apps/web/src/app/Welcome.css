@@ -120,9 +120,11 @@
   color: var(--knox-text-tertiary);
 }
 .knox-welcome__item-delete {
-  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--knox-text-tertiary);
-  padding: 2px 5px;
+  padding: 4px;
   border-radius: var(--knox-radius-sm);
 }
 .knox-welcome__item-delete:hover {

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { FixedSizeList, type ListChildComponentProps } from "react-window";
+import { ChevronRight, File, FilePlus, Folder, FolderOpen, FolderPlus, RefreshCw } from "lucide-react";
 import { dirname, isValidFileName, joinPath, type VirtualFileSystem } from "@knox/shared";
 import { useFileTree, type TreeRow } from "./useFileTree";
 import { useEditorStore } from "../../state/editor-store";
@@ -125,12 +126,24 @@ export function Explorer({ fs, workspaceName }: { fs: VirtualFileSystem | null; 
       >
         <span style={{ width: row.depth * 14 }} />
         {row.type === "directory" ? (
-          <span className={`knox-tree-chevron${row.expanded ? " knox-tree-chevron--open" : ""}`}>›</span>
+          <ChevronRight
+            size={14}
+            strokeWidth={2}
+            className={`knox-tree-chevron${row.expanded ? " knox-tree-chevron--open" : ""}`}
+          />
         ) : (
           <span className="knox-tree-chevron" />
         )}
         <span className="knox-tree-icon" aria-hidden>
-          {row.type === "directory" ? "▸" : "·"}
+          {row.type === "directory" ? (
+            row.expanded ? (
+              <FolderOpen size={14} strokeWidth={1.75} />
+            ) : (
+              <Folder size={14} strokeWidth={1.75} />
+            )
+          ) : (
+            <File size={14} strokeWidth={1.75} />
+          )}
         </span>
         {isRenaming ? (
           <input
@@ -156,14 +169,14 @@ export function Explorer({ fs, workspaceName }: { fs: VirtualFileSystem | null; 
       <div className="knox-explorer__header">
         <span className="knox-explorer__title">{workspaceName}</span>
         <div className="knox-explorer__actions">
-          <button title="New File" onClick={() => setPendingCreate({ parentPath: "/", type: "file" })}>
-            +f
+          <button title="New File" aria-label="New File" onClick={() => setPendingCreate({ parentPath: "/", type: "file" })}>
+            <FilePlus size={15} strokeWidth={1.75} />
           </button>
-          <button title="New Folder" onClick={() => setPendingCreate({ parentPath: "/", type: "directory" })}>
-            +d
+          <button title="New Folder" aria-label="New Folder" onClick={() => setPendingCreate({ parentPath: "/", type: "directory" })}>
+            <FolderPlus size={15} strokeWidth={1.75} />
           </button>
-          <button title="Refresh" onClick={() => refresh("/")}>
-            ↻
+          <button title="Refresh" aria-label="Refresh" onClick={() => refresh("/")}>
+            <RefreshCw size={13} strokeWidth={1.75} />
           </button>
         </div>
       </div>

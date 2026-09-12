@@ -48,8 +48,11 @@
   background: var(--knox-bg-2);
   color: var(--knox-text-primary);
   border-radius: var(--knox-radius-sm);
-  width: 24px;
+  width: 26px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .knox-git__message {
@@ -126,11 +129,13 @@
   border: none;
   background: var(--knox-bg-3);
   color: var(--knox-text-primary);
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 3px;
   cursor: pointer;
-  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .knox-git-commit {

@@ -1,13 +1,14 @@
+import { Files, Search, GitBranch, Bug, Blocks } from "lucide-react";
 import { useLayoutStore } from "../state/layout-store";
 import type { PanelLayout } from "@knox/shared";
 import "./ActivityBar.css";
 
-const ITEMS: { id: PanelLayout["activeActivityView"]; label: string; glyph: string; available: boolean }[] = [
-  { id: "explorer", label: "Explorer", glyph: "▤", available: true },
-  { id: "search", label: "Search", glyph: "⌕", available: true },
-  { id: "git", label: "Source Control", glyph: "⑂", available: true },
-  { id: "debug", label: "Run & Debug - arrives with the runtime package", glyph: "▷", available: false },
-  { id: "extensions", label: "Extensions", glyph: "⬡", available: false },
+const ITEMS: { id: PanelLayout["activeActivityView"]; label: string; icon: typeof Files; available: boolean }[] = [
+  { id: "explorer", label: "Explorer", icon: Files, available: true },
+  { id: "search", label: "Search", icon: Search, available: true },
+  { id: "git", label: "Source Control", icon: GitBranch, available: true },
+  { id: "debug", label: "Run & Debug - arrives with the runtime package", icon: Bug, available: false },
+  { id: "extensions", label: "Extensions", icon: Blocks, available: false },
 ];
 
 export function ActivityBar(): React.ReactElement {
@@ -34,7 +35,7 @@ export function ActivityBar(): React.ReactElement {
             }
           }}
         >
-          <span aria-hidden>{item.glyph}</span>
+          <item.icon size={19} strokeWidth={1.75} aria-hidden />
         </button>
       ))}
     </nav>

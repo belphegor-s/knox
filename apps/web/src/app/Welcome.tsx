@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import type { WorkspaceMetadata } from "@knox/shared";
 import { FileSystemAccessBackend } from "@knox/filesystem";
 import {
@@ -109,7 +110,7 @@ export function Welcome(): React.ReactElement {
                       onClick={(e) => void handleDelete(ws.id, e)}
                       onKeyDown={(e) => e.key === "Enter" && void handleDelete(ws.id, e as unknown as React.MouseEvent)}
                     >
-                      ✕
+                      <X size={12} strokeWidth={1.75} />
                     </span>
                   </button>
                 </li>

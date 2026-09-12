@@ -71,13 +71,14 @@
   border: none;
   background: transparent;
   color: var(--knox-text-tertiary);
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 3px;
-  font-size: 13px;
-  line-height: 1;
   cursor: pointer;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .knox-tab__close:hover {
   background: var(--knox-bg-active);

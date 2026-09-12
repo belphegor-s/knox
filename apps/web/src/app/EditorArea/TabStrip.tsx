@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { basename } from "@knox/shared";
 import { useEditorStore, type EditorTab } from "../../state/editor-store";
 import "./TabStrip.css";
@@ -32,7 +33,7 @@ export function TabStrip({ onCloseRequested }: { onCloseRequested: (path: string
               onCloseRequested(tab.path, tab);
             }}
           >
-            ×
+            <X size={13} strokeWidth={2} />
           </button>
         </div>
       ))}

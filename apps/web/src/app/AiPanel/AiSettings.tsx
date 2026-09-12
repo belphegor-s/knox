@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { X } from "lucide-react";
 import { PROVIDER_PRESETS, type ProviderConfig } from "@knox/ai";
 import { createId } from "@knox/shared";
 import { useAiStore } from "../../state/ai-store";
@@ -57,8 +58,8 @@ export function AiSettings({ onClose }: { onClose: () => void }): React.ReactEle
                 <span className="knox-aisettings__item-name">{p.name}</span>
                 <span className="knox-aisettings__item-model">{p.model}</span>
               </label>
-              <button onClick={() => void removeProvider(p.id)} aria-label={`Remove ${p.name}`}>
-                ✕
+              <button className="knox-aisettings__item-remove" onClick={() => void removeProvider(p.id)} aria-label={`Remove ${p.name}`}>
+                <X size={13} strokeWidth={1.75} />
               </button>
             </div>
           ))}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Settings } from "lucide-react";
 import { useAiStore } from "../../state/ai-store";
 import { AiSettings } from "./AiSettings";
 import { AiChat } from "./AiChat";
@@ -22,7 +23,7 @@ export function AiPanel(): React.ReactElement {
       <div className="knox-aipanel__header">
         <span>{active ? `AI · ${active.name}` : "AI"}</span>
         <button className="knox-aipanel__settings-btn" onClick={() => setShowSettings((v) => !v)} aria-label="AI settings">
-          ⚙
+          <Settings size={14} strokeWidth={1.75} />
         </button>
       </div>
 

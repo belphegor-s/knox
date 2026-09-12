@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import { useAiStore } from "../../state/ai-store";
 import { useEditorStore } from "../../state/editor-store";
 import { useWorkspaceStore } from "../../state/workspace-store";
@@ -50,14 +51,17 @@ export function AiChat(): React.ReactElement {
       {lastContext && (
         <div className="knox-aichat__context">
           <button className="knox-aichat__context-toggle" onClick={toggleContextPreview}>
-            AI Context: {lastContext.files.length} file{lastContext.files.length === 1 ? "" : "s"} · ~{lastContext.estimatedTokens} tokens
-            {contextPreviewOpen ? " ▾" : " ▸"}
+            <span>
+              AI Context: {lastContext.files.length} file{lastContext.files.length === 1 ? "" : "s"} · ~{lastContext.estimatedTokens} tokens
+            </span>
+            {contextPreviewOpen ? <ChevronDown size={13} strokeWidth={1.75} /> : <ChevronRight size={13} strokeWidth={1.75} />}
           </button>
           {contextPreviewOpen && (
             <div className="knox-aichat__context-detail">
               {lastContext.files.map((f) => (
-                <div key={f.path}>
-                  ✓ {f.path} <span className="knox-aichat__context-reason">({f.reason}{f.redacted ? ", secrets redacted" : ""})</span>
+                <div key={f.path} className="knox-aichat__context-file">
+                  <Check size={12} strokeWidth={2} />
+                  {f.path} <span className="knox-aichat__context-reason">({f.reason}{f.redacted ? ", secrets redacted" : ""})</span>
                 </div>
               ))}
             </div>

@@ -28,7 +28,9 @@
   height: 22px;
   border-radius: var(--knox-radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .knox-aipanel__settings-btn:hover {
   background: var(--knox-bg-hover);
