@@ -1,0 +1,30 @@
+{
+  "family": "knox-runner",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/knox-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/knox-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "knox-runner",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/knox-runner:latest",
+      "essential": true,
+      "user": "1000:1000",
+      "linuxParameters": {
+        "capabilities": { "drop": ["ALL"] },
+        "pidsLimit": 128
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/knox/execution",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "knox-runner",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}

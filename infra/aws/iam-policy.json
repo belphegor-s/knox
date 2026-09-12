@@ -1,0 +1,58 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "RunAndDescribeKnoxTasks",
+      "Effect": "Allow",
+      "Action": ["ecs:RunTask", "ecs:DescribeTasks"],
+      "Resource": [
+        "arn:aws:ecs:*:*:task-definition/knox-runner:*",
+        "arn:aws:ecs:*:*:task/knox-execution/*"
+      ]
+    },
+    {
+      "Sid": "StopKnoxTasks",
+      "Effect": "Allow",
+      "Action": "ecs:StopTask",
+      "Resource": "arn:aws:ecs:*:*:task/knox-execution/*"
+    },
+    {
+      "Sid": "PassExecutionAndTaskRolesToECSOnly",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": [
+        "arn:aws:iam::*:role/knox-ecs-execution-role",
+        "arn:aws:iam::*:role/knox-ecs-task-role"
+      ],
+      "Condition": {
+        "StringEquals": { "iam:PassedToService": "ecs-tasks.amazonaws.com" }
+      }
+    },
+    {
+      "Sid": "CodeAndOutputStaging",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::knox-execution-*/*"
+    },
+    {
+      "Sid": "EcrAuth",
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
+    },
+    {
+      "Sid": "PushKnoxRunnerImage",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:PutImage",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload"
+      ],
+      "Resource": "arn:aws:ecr:*:*:repository/knox-runner"
+    }
+  ]
+}

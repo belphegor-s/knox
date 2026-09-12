@@ -52,6 +52,23 @@ request - fine for the current per-IP rate limit, not designed for high concurre
 rate-limit store (the limiter in `apps/api/src/rate-limit.ts` is in-process, correct for one
 replica), and stdin support (a running program can't be sent interactive input).
 
+## Alternative backend: AWS Fargate (implemented, not yet exercised against real AWS)
+
+`docker-runner.ts`'s sibling containers share this host's kernel - fine when this host's own
+users are the only ones running code on it, weaker once `apps/worker` is serving untrusted code
+from the public internet, where a container-level escape (even an unlikely one) could reach
+every other container on that host. `apps/worker/src/ecs-runner.ts` is a second executor that
+runs each request as its own Fargate task instead - a separate hardware-virtualized microVM per
+execution - selected via `KNOX_EXECUTION_BACKEND=ecs` (`apps/worker/src/executor.ts` is the
+dispatcher; default stays `docker`). Full provisioning steps, the exact IAM policy, and the
+concrete trade-offs (no live output streaming, slower cold start, weaker network isolation than
+`--network none`) are in `infra/aws/README.md` - read that before switching a deployment to it.
+
+`ecs:RunTask` has no equivalent of `docker run -i`, so code can't be piped in the way the local
+path does. `infra/runner/knox-run` has two fully separate branches (chosen by whether
+`$CODE_S3_URI` is set) so the ECS path's needs - fetching code from S3, uploading stdout/stderr
+back to S3 once the process exits - can never subtly change the already-verified local path.
+
 ## Sync (specified, not implemented)
 
 Encrypted, resumable sync of workspace metadata and *selected* files - never a blind full-directory sync. Planned building blocks: ignore rules (reusing the glob matcher already in `packages/filesystem/src/glob.ts`), size limits, binary detection (the same NUL-byte heuristic `useFileBuffer.ts` already uses locally), chunked/resumable uploads. Sync state per file: `✓ Saved locally / ↑ Syncing / ✓ Synced / ⚠ Offline / ⚠ Conflict` - never hidden, never silently retried into invisibility.
