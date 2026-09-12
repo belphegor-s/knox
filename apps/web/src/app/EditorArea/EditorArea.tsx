@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useMemo, useRef } from "react";
 import type { KnoxEditorHandle } from "@knox/editor/monaco";
 import { useEditorStore, type EditorTab } from "../../state/editor-store";
 import { useWorkspaceStore } from "../../state/workspace-store";
+import { useColorScheme } from "../../hooks/useColorScheme";
 import { useFileBuffer } from "./useFileBuffer";
 import { TabStrip } from "./TabStrip";
 import "./EditorArea.css";
@@ -41,6 +42,7 @@ function SingleFilePane({ tab }: { tab: EditorTab }): React.ReactElement {
   const pinTab = useEditorStore((s) => s.pinTab);
   const updateCursor = useEditorStore((s) => s.updateCursor);
   const editorHandle = useRef<KnoxEditorHandle>(null);
+  const colorScheme = useColorScheme();
 
   async function save(): Promise<void> {
     if (!fs || buffer.kind !== "text") return;
@@ -102,6 +104,7 @@ function SingleFilePane({ tab }: { tab: EditorTab }): React.ReactElement {
         path={tab.path}
         initialValue={buffer.text}
         fileSizeBytes={buffer.sizeBytes}
+        theme={colorScheme === "light" ? "knox-light" : "knox-dark"}
         initialViewState={
           tab.cursorLine > 1 || tab.cursorColumn > 1
             ? { line: tab.cursorLine, column: tab.cursorColumn, scrollTop: tab.scrollTop }
