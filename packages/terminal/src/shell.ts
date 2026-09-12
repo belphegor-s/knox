@@ -184,6 +184,12 @@ export class Shell {
           return result.exitCode;
         }
 
+        // Printed before the request even starts - a cloud-backed run can take a minute or
+        // more (Fargate cold start, see docs/cloud-runtime.md), and runRemote() itself doesn't
+        // emit anything until either the backend responds or the whole thing fails, so without
+        // this the terminal just sits there silently the entire time, indistinguishable from
+        // being frozen.
+        write("stdout", `Running ${filename} in the cloud (this can take a minute on a cold start)...\n`);
         const remote = await runRemote({ language, filename, code, onOutput: write });
         if (remote.unavailable) {
           write("stderr", `${getCapabilities(language).unavailableReason}\n`);
