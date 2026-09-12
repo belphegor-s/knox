@@ -274,23 +274,23 @@
       /* ---------- hero + orb ---------- */
       .hero {
         position: relative;
-        padding: 88px 24px 0;
+        padding: 88px 24px 64px;
         text-align: center;
         isolation: isolate;
       }
       .orb-canvas {
         position: absolute;
         /* The shader's visible glow only fills the inner ~55% of this box's radius (see
-           orb.js's falloff), so the box is much bigger than what actually shows. Sized and
-           positioned so the VISIBLE glow sits in the gap between the nav and the eyebrow
-           text, above the headline - not shrunk into invisibility (first attempt at "clear
-           of the text" pushed it almost entirely off-screen), and not overlapping the h1. */
-        top: -140px;
+           orb.js's falloff), so the box is much bigger than what actually shows. Shrunk
+           further so the visible glow can sit lower - closer to the eyebrow text - while
+           its bottom edge still clears the h1 (checked against a real measurement of the
+           h1's position, not eyeballed). */
+        top: -70px;
         left: 50%;
         transform: translateX(-50%);
-        width: 400px;
-        height: 400px;
-        max-width: 110vw;
+        width: 320px;
+        height: 320px;
+        max-width: 90vw;
         pointer-events: none;
         z-index: 0;
       }
