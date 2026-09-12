@@ -59,10 +59,10 @@ function start(gl) {
       vec2 warp = vec2(snoise(uv * 1.1 + t), snoise(uv * 1.1 - t + 5.0)) * 0.55;
       float n = snoise((uv + warp) * 1.4 + t);
       float dist = length(uv);
-      float falloff = smoothstep(0.72, 0.05, dist);
+      float falloff = smoothstep(0.55, 0.05, dist);
       float orb = falloff * (0.55 + 0.45 * n);
       vec3 color = mix(uColorB, uColorA, clamp(orb, 0.0, 1.0));
-      float alpha = pow(falloff, 1.6) * uAlpha * (0.6 + 0.4 * n);
+      float alpha = smoothstep(0.1, 0.55, falloff) * uAlpha * (0.75 + 0.25 * n);
       gl_FragColor = vec4(color, max(alpha, 0.0));
     }
   `;
@@ -99,7 +99,7 @@ function start(gl) {
 
   const PALETTE = {
     dark: { a: [0.7569, 0.3765, 0.1843], b: [0.102, 0.059, 0.039], alpha: 0.95 },
-    light: { a: [0.68, 0.32, 0.14], b: [0.941, 0.867, 0.816], alpha: 0.8 },
+    light: { a: [0.62, 0.26, 0.09], b: [0.78, 0.44, 0.22], alpha: 1 },
   };
 
   function currentTheme() {
