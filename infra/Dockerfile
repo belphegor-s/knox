@@ -12,6 +12,11 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
 COPY packages/filesystem/package.json packages/filesystem/package.json
 COPY packages/editor/package.json packages/editor/package.json
+COPY packages/git/package.json packages/git/package.json
+COPY packages/terminal/package.json packages/terminal/package.json
+COPY packages/runtime/package.json packages/runtime/package.json
+COPY packages/search/package.json packages/search/package.json
+COPY packages/ai/package.json packages/ai/package.json
 
 RUN pnpm install --frozen-lockfile
 
@@ -19,6 +24,11 @@ COPY apps/web apps/web
 COPY packages/shared packages/shared
 COPY packages/filesystem packages/filesystem
 COPY packages/editor packages/editor
+COPY packages/git packages/git
+COPY packages/terminal packages/terminal
+COPY packages/runtime packages/runtime
+COPY packages/search packages/search
+COPY packages/ai packages/ai
 
 RUN pnpm --filter @knox/web build
 
