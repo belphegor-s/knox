@@ -1,17 +1,11 @@
 import { useRef } from "react";
 import { Maximize2, Minimize2, X } from "lucide-react";
-import { useLayoutStore } from "../../state/layout-store";
+import { PANEL_COLLAPSED_HEIGHT, PANEL_EXPANDED_MIN_HEIGHT, useLayoutStore } from "../../state/layout-store";
 import { useDragResize } from "../../hooks/useDragResize";
 import { TerminalPanel } from "./TerminalPanel";
 import "./BottomPanel.css";
 
-// Below this, the panel visually reads as "just a strip of tabs" rather than a shrunken
-// terminal - dragging past the midpoint between this and EXPANDED_MIN_HEIGHT snaps straight
-// to it, matching VS Code's panel-collapse feel instead of stopping at an awkward in-between
-// height.
-const COLLAPSED_HEIGHT = 32;
-const EXPANDED_MIN_HEIGHT = 120;
-const SNAP_THRESHOLD = (COLLAPSED_HEIGHT + EXPANDED_MIN_HEIGHT) / 2;
+const SNAP_THRESHOLD = (PANEL_COLLAPSED_HEIGHT + PANEL_EXPANDED_MIN_HEIGHT) / 2;
 
 export function BottomPanel(): React.ReactElement | null {
   const visible = useLayoutStore((s) => s.panelVisible);
@@ -20,24 +14,19 @@ export function BottomPanel(): React.ReactElement | null {
   const setHeight = useLayoutStore((s) => s.setPanelHeight);
   const setVisible = useLayoutStore((s) => s.setPanelVisible);
   const toggleMaximize = useLayoutStore((s) => s.toggleMaximizePanel);
+  const toggleCollapsed = useLayoutStore((s) => s.togglePanelCollapsed);
   const tab = useLayoutStore((s) => s.bottomPanelTab);
   const setTab = useLayoutStore((s) => s.setBottomPanelTab);
 
-  const lastExpandedHeight = useRef(Math.max(height, EXPANDED_MIN_HEIGHT));
-  if (height > COLLAPSED_HEIGHT) lastExpandedHeight.current = height;
-  const collapsed = height <= COLLAPSED_HEIGHT;
+  const collapsed = height <= PANEL_COLLAPSED_HEIGHT;
 
   function handleDrag(next: number): void {
-    setHeight(next < SNAP_THRESHOLD ? COLLAPSED_HEIGHT : next);
+    setHeight(next < SNAP_THRESHOLD ? PANEL_COLLAPSED_HEIGHT : next);
   }
 
   // The handle still needs to be draggable FROM fully collapsed, so its own range floor is
   // the collapsed height, not the expanded one - only the snap in handleDrag distinguishes them.
-  const resize = useDragResize({ axis: "y", grows: "start", value: height, min: COLLAPSED_HEIGHT, max: 640, onChange: handleDrag });
-
-  function toggleCollapsed(): void {
-    setHeight(collapsed ? lastExpandedHeight.current : COLLAPSED_HEIGHT);
-  }
+  const resize = useDragResize({ axis: "y", grows: "start", value: height, min: PANEL_COLLAPSED_HEIGHT, max: 640, onChange: handleDrag });
 
   // Once the panel has been opened at least once, keep it mounted (hidden via CSS, not
   // unmounted) so the terminal's xterm instance, worker, and shell session (cwd, history)

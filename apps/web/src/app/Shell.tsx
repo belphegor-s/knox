@@ -31,7 +31,7 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
   const aiPanelWidth = useLayoutStore((s) => s.aiPanelWidth);
   const setAiPanelWidth = useLayoutStore((s) => s.setAiPanelWidth);
   const setAiPanelVisible = useLayoutStore((s) => s.setAiPanelVisible);
-  const togglePanelVisible = useLayoutStore((s) => s.togglePanelVisible);
+  const togglePanelCollapsed = useLayoutStore((s) => s.togglePanelCollapsed);
   const toggleMaximizePanel = useLayoutStore((s) => s.toggleMaximizePanel);
   const distractionFree = useLayoutStore((s) => s.distractionFree);
   const toggleDistractionFree = useLayoutStore((s) => s.toggleDistractionFree);
@@ -103,7 +103,7 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         title: "View: Toggle Panel",
         category: "Panels",
         shortcut: "⌘J",
-        run: togglePanelVisible,
+        run: togglePanelCollapsed,
       },
       {
         id: "view.toggleMaximizePanel",
@@ -173,7 +173,7 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
     sidebarVisible,
     aiPanelVisible,
     toggleTerminalFocus,
-    togglePanelVisible,
+    togglePanelCollapsed,
     toggleMaximizePanel,
     setSidebarVisible,
     setAiPanelVisible,
