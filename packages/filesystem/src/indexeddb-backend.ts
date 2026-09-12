@@ -34,19 +34,12 @@ interface EntryRecord {
 const ENTRIES = "entries";
 const CONTENTS = "contents";
 
-/**
- * IndexedDB-backed VirtualFileSystem - used when OPFS is unavailable
- * (older Safari, some privacy-hardened browsers). Slower than OPFS for
- * large binary payloads but universally supported and transactional.
- * See docs/local-runtime.md for the capability matrix.
- */
+// Fallback VirtualFileSystem when OPFS is unavailable.
 export class IndexedDbFileSystem implements VirtualFileSystem {
   readonly id: string;
   private readonly changeEmitter = new Emitter<FileChangeEvent>();
-  // Date.now() has only ms resolution, so back-to-back writes of same-sized
-  // content in one tick can collide; a monotonic counter guarantees each
-  // write gets a distinct version for optimistic-concurrency checks.
   private versionCounter = 0;
+  private lastMtime = 0;
 
   private constructor(
     workspaceId: string,
@@ -128,7 +121,10 @@ export class IndexedDbFileSystem implements VirtualFileSystem {
       await this.mkdirInternal(dirname(norm), true);
     }
     const bytes = typeof data === "string" ? textEncoder.encode(data) : data;
-    const now = Date.now();
+    // Monotonic: Date.now() alone can repeat across fast same-tick writes, which breaks
+    // consumers (like git status) that trust mtime to detect same-size content changes.
+    const now = Math.max(Date.now(), this.lastMtime + 1);
+    this.lastMtime = now;
     const entry: EntryRecord = {
       path: norm,
       parentPath: dirname(norm),
