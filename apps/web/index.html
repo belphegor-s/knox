@@ -2,15 +2,12 @@
 <html lang="en">
   <head>
     <script>
-      // First thing in <head>, synchronous: confirms JS actually runs before any .reveal
-      // content paints, so the CSS scroll-reveal animation (scoped to .js .reveal) never
-      // applies when it hasn't - see the .reveal rules below for why that matters.
       document.documentElement.classList.add("js");
     </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#0e0f11" />
+    <meta name="theme-color" content="#0b0c0e" />
     <meta
       name="description"
       content="Knox is a local-first, browser-native IDE: a real filesystem, a real Monaco editor, real Git, and a real terminal, all running in your browser tab with no server round-trip."
@@ -21,77 +18,58 @@
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Knox" />
-    <meta property="og:title" content="Knox - a local-first, browser-native IDE" />
+    <meta property="og:title" content="Knox" />
     <meta
       property="og:description"
-      content="Real file system access, a real terminal, real git, and AI assistance, all running on your machine with no server round-trip."
+      content="A real filesystem, a real editor, real Git, and a real terminal. In your browser tab."
     />
     <meta property="og:image" content="/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
 
     <title>Knox</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,340;9..144,440;9..144,560&display=swap" rel="stylesheet" />
+
     <style>
-      /* ---------- tokens (mirrors src/styles/theme.css so the marketing page and the app
-         never drift apart) ---------- */
       :root {
         --accent: #c9a567;
-        --accent-fg: #14110a;
-        --success: #8fb37a;
-        --info: #7fb8c4;
-        --radius-sm: 4px;
-        --radius-md: 8px;
-        --radius-lg: 16px;
-        --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", system-ui, sans-serif;
-        --font-mono: ui-monospace, "JetBrains Mono", "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
-        --ease: cubic-bezier(0.2, 0, 0, 1);
-        --max-w: 1180px;
+        --accent-dim: #a5895f;
+        --radius: 10px;
+        --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        --mono: ui-monospace, "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        --max-w: 760px;
       }
       :root,
       :root[data-theme="dark"] {
-        --bg-0: #0b0c0e;
-        --bg-1: #0e0f11;
-        --bg-2: #16181b;
-        --bg-3: #1e2023;
-        --border: #232529;
-        --border-strong: #34373c;
-        --text-0: #eceef0;
-        --text-1: #d8dadd;
-        --text-2: #8b9099;
-        --text-3: #5c6066;
-        --glow: radial-gradient(circle, rgba(201, 165, 103, 0.16) 0%, rgba(201, 165, 103, 0) 65%);
-        --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+        --bg: #0b0c0e;
+        --surface: #101113;
+        --border: #202226;
+        --ink: #e8e6e1;
+        --ink-dim: #8b8d92;
+        --ink-faint: #55575c;
         color-scheme: dark;
       }
       @media (prefers-color-scheme: light) {
         :root:not([data-theme="dark"]) {
-          --bg-0: #f4f2ef;
-          --bg-1: #fbfaf8;
-          --bg-2: #f0eee9;
-          --bg-3: #e8e5df;
-          --border: #e3e0da;
-          --border-strong: #cfccc5;
-          --text-0: #16171a;
-          --text-1: #24262b;
-          --text-2: #63666d;
-          --text-3: #96999f;
-          --glow: radial-gradient(circle, rgba(201, 165, 103, 0.22) 0%, rgba(201, 165, 103, 0) 65%);
-          --card-shadow: 0 12px 32px rgba(20, 17, 10, 0.08);
+          --bg: #faf9f6;
+          --surface: #ffffff;
+          --border: #e6e3dc;
+          --ink: #1c1c1a;
+          --ink-dim: #6b6d68;
+          --ink-faint: #a3a49e;
           color-scheme: light;
         }
       }
       :root[data-theme="light"] {
-        --bg-0: #f4f2ef;
-        --bg-1: #fbfaf8;
-        --bg-2: #f0eee9;
-        --bg-3: #e8e5df;
-        --border: #e3e0da;
-        --border-strong: #cfccc5;
-        --text-0: #16171a;
-        --text-1: #24262b;
-        --text-2: #63666d;
-        --text-3: #96999f;
-        --glow: radial-gradient(circle, rgba(201, 165, 103, 0.22) 0%, rgba(201, 165, 103, 0) 65%);
-        --card-shadow: 0 12px 32px rgba(20, 17, 10, 0.08);
+        --bg: #faf9f6;
+        --surface: #ffffff;
+        --border: #e6e3dc;
+        --ink: #1c1c1a;
+        --ink-dim: #6b6d68;
+        --ink-faint: #a3a49e;
         color-scheme: light;
       }
 
@@ -99,14 +77,15 @@
         box-sizing: border-box;
       }
       html {
-        scroll-behavior: smooth;
         overflow-x: hidden;
       }
       body {
         margin: 0;
-        background: var(--bg-0);
-        color: var(--text-1);
-        font-family: var(--font-ui);
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 16px;
+        line-height: 1.5;
         -webkit-font-smoothing: antialiased;
         overflow-x: hidden;
       }
@@ -122,24 +101,21 @@
         margin: 0 auto;
         padding: 0 24px;
       }
-      /* Visible by default - if JS never runs (blocked, fails to load), the page must still
-         show everything rather than leaving scroll-reveal content stuck at opacity:0. The
-         animated hidden state only applies once the boot script (first thing in <head>) has
-         confirmed it's actually running by adding .js to <html>. */
-      .reveal {
-        opacity: 1;
+      .wrap--wide {
+        max-width: 920px;
       }
-      .js .reveal {
+
+      .js .fade {
         opacity: 0;
-        transform: translateY(14px);
-        transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+        transform: translateY(8px);
+        transition: opacity 0.7s ease, transform 0.7s ease;
       }
-      .js .reveal.in {
+      .js .fade.in {
         opacity: 1;
         transform: none;
       }
       @media (prefers-reduced-motion: reduce) {
-        .js .reveal {
+        .js .fade {
           opacity: 1;
           transform: none;
           transition: none;
@@ -147,76 +123,63 @@
       }
 
       /* ---------- nav ---------- */
-      .nav {
-        position: sticky;
-        top: 0;
-        z-index: 20;
+      nav {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 24px;
         max-width: var(--max-w);
         margin: 0 auto;
-        background: color-mix(in srgb, var(--bg-0) 78%, transparent);
-        backdrop-filter: blur(10px);
+        padding: 28px 24px 0;
       }
       .brand {
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-weight: 600;
-        font-size: 15px;
-        letter-spacing: -0.01em;
+        gap: 9px;
         text-decoration: none;
-        color: var(--text-0);
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        color: var(--ink);
       }
       .brand svg {
-        width: 26px;
-        height: 26px;
-        border-radius: 6px;
+        width: 20px;
+        height: 20px;
+        border-radius: 5px;
       }
-      .nav-links {
+      .nav-right {
         display: flex;
         align-items: center;
-        gap: 28px;
-        font-size: 13.5px;
-        color: var(--text-2);
+        gap: 18px;
       }
-      .nav-links a {
+      .nav-link {
+        font-size: 13px;
+        color: var(--ink-dim);
         text-decoration: none;
-        transition: color var(--knox-motion-fast, 120ms) var(--ease);
-        white-space: nowrap;
       }
-      .nav-links a:hover {
-        color: var(--text-0);
+      .nav-link:hover {
+        color: var(--ink);
       }
-      @media (max-width: 720px) {
-        /* No off-canvas menu for three links - hiding them beats letting the nav wrap into
-           a multi-row mess that overflows the viewport horizontally. */
-        .nav-links {
+      @media (max-width: 560px) {
+        .nav-link {
           display: none;
         }
       }
-      .nav-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
       .theme-toggle {
         appearance: none;
-        border: 1px solid var(--border);
-        background: var(--bg-2);
-        color: var(--text-1);
-        width: 32px;
-        height: 32px;
-        border-radius: var(--radius-md);
-        cursor: pointer;
+        border: none;
+        background: none;
+        color: var(--ink-dim);
+        width: 28px;
+        height: 28px;
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
+        border-radius: 6px;
       }
       .theme-toggle:hover {
-        border-color: var(--border-strong);
+        color: var(--ink);
+        background: var(--surface);
       }
       .theme-toggle svg {
         width: 15px;
@@ -231,586 +194,283 @@
       :root[data-theme="light"] .theme-toggle .icon-sun {
         display: block;
       }
-
       .btn {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        font-size: 13.5px;
+        gap: 6px;
+        font-size: 13px;
         font-weight: 600;
-        padding: 9px 16px;
-        border-radius: var(--radius-md);
+        padding: 8px 15px;
+        border-radius: 7px;
         text-decoration: none;
-        border: 1px solid transparent;
-        cursor: pointer;
-        transition: transform 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease);
+        border: 1px solid var(--ink);
+        color: var(--bg);
+        background: var(--ink);
+        transition: opacity 0.15s ease;
       }
-      .btn:active {
-        transform: scale(0.97);
-      }
-      .btn-primary {
-        background: var(--accent);
-        color: var(--accent-fg);
-      }
-      .btn-primary:hover {
-        background: color-mix(in srgb, var(--accent) 88%, white 12%);
-      }
-      .btn-ghost {
-        background: transparent;
-        border-color: var(--border);
-        color: var(--text-1);
-      }
-      .btn-ghost:hover {
-        border-color: var(--border-strong);
-        background: var(--bg-2);
-      }
-      .btn-lg {
-        padding: 13px 22px;
-        font-size: 14.5px;
+      .btn:hover {
+        opacity: 0.82;
       }
 
-      /* ---------- hero ---------- */
+      /* ---------- hero + orb ---------- */
       .hero {
         position: relative;
-        padding: 76px 24px 40px;
+        padding: 108px 24px 0;
         text-align: center;
       }
-      .hero::before {
-        content: "";
+      .orb-canvas {
         position: absolute;
-        top: -160px;
+        top: -60px;
         left: 50%;
         transform: translateX(-50%);
-        width: 900px;
-        height: 700px;
-        background: var(--glow);
+        width: 640px;
+        height: 640px;
+        max-width: 130vw;
         pointer-events: none;
-        z-index: -1;
+        z-index: 0;
+        opacity: 0.85;
       }
-      .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--accent);
-        background: color-mix(in srgb, var(--accent) 12%, transparent);
-        border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-        padding: 6px 12px;
-        border-radius: 999px;
-        margin-bottom: 24px;
+      .hero > * {
+        position: relative;
+        z-index: 1;
       }
-      .eyebrow .dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--success);
+      .hero h1 {
+        font-family: var(--serif);
+        font-weight: 440;
+        font-size: clamp(38px, 6.4vw, 68px);
+        line-height: 1.05;
+        letter-spacing: -0.01em;
+        margin: 0 auto 20px;
+        max-width: 680px;
+        color: var(--ink);
       }
-      h1 {
-        font-size: clamp(34px, 5.4vw, 62px);
-        line-height: 1.06;
-        letter-spacing: -0.03em;
-        margin: 0 auto 22px;
-        max-width: 900px;
-        color: var(--text-0);
-        font-weight: 650;
-      }
-      h1 em {
-        font-style: normal;
+      .hero h1 em {
+        font-style: italic;
         color: var(--accent);
       }
       .hero-sub {
-        font-size: clamp(15px, 1.6vw, 18px);
+        font-size: 16px;
         line-height: 1.6;
-        color: var(--text-2);
-        max-width: 620px;
-        margin: 0 auto 34px;
+        color: var(--ink-dim);
+        max-width: 440px;
+        margin: 0 auto 32px;
       }
       .hero-ctas {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
-        margin-bottom: 56px;
-        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 12px;
       }
-
-      .hero-frame {
-        position: relative;
-        max-width: 1040px;
-        margin: 0 auto;
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--border);
-        box-shadow: var(--card-shadow);
-        overflow: hidden;
-        background: var(--bg-1);
-      }
-      .hero-frame img {
-        width: 100%;
-        display: block;
-      }
-      .hero-frame .shot-light {
-        display: none;
-      }
-      :root[data-theme="light"] .hero-frame .shot-dark {
-        display: none;
-      }
-      :root[data-theme="light"] .hero-frame .shot-light {
-        display: block;
-      }
-
-      /* ---------- value strip ---------- */
-      .value-strip {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-        padding: 40px 24px 8px;
-      }
-      .pill {
-        font-size: 12.5px;
-        color: var(--text-2);
-        border: 1px solid var(--border);
-        background: var(--bg-2);
-        padding: 7px 14px;
-        border-radius: 999px;
-        display: flex;
-        align-items: center;
-        gap: 7px;
-      }
-      .pill svg {
-        width: 13px;
-        height: 13px;
-        color: var(--success);
-        flex-shrink: 0;
-      }
-
-      /* ---------- section headers ---------- */
-      .section {
-        padding: 92px 24px;
-      }
-      .section-head {
-        max-width: 620px;
-        margin: 0 auto 48px;
-        text-align: center;
-      }
-      .section-head h2 {
-        font-size: clamp(26px, 3.4vw, 38px);
-        letter-spacing: -0.02em;
-        color: var(--text-0);
-        margin: 0 0 14px;
-        font-weight: 640;
-      }
-      .section-head p {
-        color: var(--text-2);
-        font-size: 15px;
-        line-height: 1.6;
-        margin: 0;
-      }
-
-      /* ---------- bento grid ---------- */
-      .bento {
-        max-width: var(--max-w);
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 14px;
-      }
-      .card {
-        grid-column: span 6;
-        background: var(--bg-1);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
-        padding: 26px;
-        position: relative;
-        overflow: hidden;
-        transition: border-color 0.2s var(--ease), transform 0.2s var(--ease);
-      }
-      .card:hover {
-        border-color: var(--border-strong);
-        transform: translateY(-2px);
-      }
-      @media (min-width: 720px) {
-        .card--lg {
-          grid-column: span 4;
-        }
-        .card--md {
-          grid-column: span 3;
-        }
-        .card--sm {
-          grid-column: span 2;
-        }
-      }
-      .card-icon {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: color-mix(in srgb, var(--accent) 14%, transparent);
-        color: var(--accent);
-        margin-bottom: 18px;
-      }
-      .card-icon svg {
-        width: 19px;
-        height: 19px;
-      }
-      .card h3 {
-        font-size: 16.5px;
-        color: var(--text-0);
-        margin: 0 0 8px;
-        letter-spacing: -0.01em;
-      }
-      .card p {
-        font-size: 13.5px;
-        line-height: 1.6;
-        color: var(--text-2);
-        margin: 0;
-      }
-      .card-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-top: 16px;
-      }
-      .card-tags span {
-        font-size: 10.5px;
-        font-family: var(--font-mono);
-        color: var(--text-3);
-        background: var(--bg-2);
-        border: 1px solid var(--border);
-        padding: 3px 7px;
-        border-radius: var(--radius-sm);
-      }
-
-      /* ---------- how it works ---------- */
-      .steps {
-        max-width: var(--max-w);
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 28px;
-        counter-reset: step;
-      }
-      .step {
-        position: relative;
-        padding-left: 44px;
-      }
-      .step::before {
-        counter-increment: step;
-        content: counter(step);
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        border: 1px solid var(--border-strong);
-        display: flex;
-        align-items: center;
-        justify-content: center;
+      .link-quiet {
         font-size: 13px;
-        font-weight: 700;
-        color: var(--accent);
-        font-family: var(--font-mono);
+        color: var(--ink-dim);
+        text-decoration: none;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 1px;
       }
-      .step h4 {
-        margin: 4px 0 8px;
-        font-size: 15px;
-        color: var(--text-0);
+      .link-quiet:hover {
+        color: var(--ink);
+        border-color: var(--ink-faint);
       }
-      .step p {
-        margin: 0;
-        font-size: 13.5px;
-        line-height: 1.6;
-        color: var(--text-2);
+      .hero-meta {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--ink-faint);
+        margin: 22px 0 56px;
+        letter-spacing: 0.02em;
       }
 
-      /* ---------- theme showcase ---------- */
-      .theme-showcase {
-        max-width: var(--max-w);
+      .shot {
+        max-width: 980px;
         margin: 0 auto;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-      }
-      @media (max-width: 760px) {
-        .theme-showcase {
-          grid-template-columns: 1fr;
-        }
-      }
-      .theme-shot {
-        border-radius: var(--radius-lg);
+        border-radius: 12px;
         border: 1px solid var(--border);
         overflow: hidden;
-        box-shadow: var(--card-shadow);
       }
-      .theme-shot img {
+      .shot img {
         width: 100%;
       }
-      .theme-shot figcaption {
-        margin: 0;
-        padding: 12px 16px;
-        font-size: 12.5px;
-        color: var(--text-2);
+      .shot .shot-light {
+        display: none;
+      }
+      :root[data-theme="light"] .shot .shot-dark {
+        display: none;
+      }
+      :root[data-theme="light"] .shot .shot-light {
+        display: block;
+      }
+
+      /* ---------- sections ---------- */
+      .section {
+        padding: 108px 0;
         border-top: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        gap: 8px;
       }
-      .theme-shot figcaption .swatch {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        border: 1px solid var(--border-strong);
-      }
-
-      /* ---------- final CTA ---------- */
-      .cta-band {
-        max-width: var(--max-w);
-        margin: 0 auto;
-        text-align: center;
-        padding: 64px 40px;
-        border-radius: 24px;
-        border: 1px solid var(--border);
-        background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
-        position: relative;
-        overflow: hidden;
-      }
-      .cta-band::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: var(--glow);
-        opacity: 0.6;
-      }
-      .cta-band > * {
-        position: relative;
-      }
-      .cta-band h2 {
-        font-size: clamp(24px, 3.2vw, 34px);
-        color: var(--text-0);
+      .section-label {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--ink-faint);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
         margin: 0 0 14px;
-        letter-spacing: -0.02em;
       }
-      .cta-band p {
-        color: var(--text-2);
-        margin: 0 0 28px;
-        font-size: 14.5px;
+      .section h2 {
+        font-family: var(--serif);
+        font-weight: 440;
+        font-size: clamp(24px, 3.4vw, 32px);
+        letter-spacing: -0.01em;
+        margin: 0 0 40px;
+        color: var(--ink);
+        max-width: 480px;
       }
 
-      /* ---------- footer ---------- */
+      .list {
+        display: flex;
+        flex-direction: column;
+      }
+      .list-row {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 24px;
+        padding: 22px 0;
+        border-top: 1px solid var(--border);
+      }
+      .list-row:last-child {
+        border-bottom: 1px solid var(--border);
+      }
+      .list-row dt {
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .list-row dd {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.65;
+        color: var(--ink-dim);
+        max-width: 480px;
+      }
+      @media (max-width: 620px) {
+        .list-row {
+          grid-template-columns: 1fr;
+          gap: 6px;
+        }
+      }
+
+      .close {
+        text-align: center;
+      }
+      .close h2 {
+        margin: 0 auto 28px;
+        max-width: 420px;
+      }
+
       footer {
         max-width: var(--max-w);
         margin: 0 auto;
-        padding: 48px 24px 60px;
+        padding: 44px 24px 56px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 20px;
+        gap: 16px;
         flex-wrap: wrap;
-        border-top: 1px solid var(--border);
-        color: var(--text-3);
-        font-size: 12.5px;
       }
       footer .brand {
-        font-size: 13px;
-        color: var(--text-2);
+        color: var(--ink-dim);
       }
-      footer .brand svg {
-        width: 20px;
-        height: 20px;
-      }
-      .footer-links {
-        display: flex;
-        gap: 20px;
+      .foot-meta {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--ink-faint);
       }
     </style>
   </head>
   <body>
-    <nav class="nav">
+    <nav>
       <a class="brand" href="#top">
         <svg viewBox="0 0 32 32" aria-hidden="true">
           <rect width="32" height="32" rx="7" fill="#0e0f11" />
-          <path
-            d="M11 7.5v17M11 16l9-8.5M11 16l9 8.5"
-            stroke="#c9a567"
-            stroke-width="2.6"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            fill="none"
-          />
+          <path d="M11 7.5v17M11 16l9-8.5M11 16l9 8.5" stroke="#c9a567" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
         </svg>
         Knox
       </a>
-      <div class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#how-it-works">How it works</a>
-        <a href="#themes">Themes</a>
-      </div>
-      <div class="nav-actions">
+      <div class="nav-right">
+        <a class="nav-link" href="#features">Features</a>
+        <a class="nav-link" href="https://github.com/belphegor-s/knox">Source</a>
         <button class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />
-          </svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="4" />
-            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-          </svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
         </button>
-        <a class="btn btn-primary" href="/app/">Open Knox</a>
+        <a class="btn" href="/app/">Open Knox</a>
       </div>
     </nav>
 
     <main id="top">
       <section class="hero">
-        <span class="eyebrow"><span class="dot"></span>Local-first &middot; Browser-native</span>
-        <h1>A real IDE.<br />Zero servers between you and your code.</h1>
-        <p class="hero-sub">
-          Knox runs entirely in your browser tab &mdash; a real filesystem, a real Monaco editor, real Git, and a real
-          terminal, all before a single network request completes.
-        </p>
+        <canvas class="orb-canvas" id="orb" aria-hidden="true"></canvas>
+        <h1>A real IDE,<br /><em>quietly</em> in your browser.</h1>
+        <p class="hero-sub">Real files. Real Git. Real terminal. Nothing to install, nothing to sign up for.</p>
         <div class="hero-ctas">
-          <a class="btn btn-primary btn-lg" href="/app/">Open Knox &rarr;</a>
-          <a class="btn btn-ghost btn-lg" href="#features">See what's real</a>
+          <a class="btn" href="/app/">Open Knox</a>
+          <a class="link-quiet" href="#features">What's actually real</a>
         </div>
-        <div class="hero-frame reveal">
-          <img class="shot-dark" src="./landing-assets/hero-dark.png" alt="Knox IDE showing an open project with a TypeScript file, file explorer, and terminal running a Python script" />
-          <img class="shot-light" src="./landing-assets/hero-light.png" alt="Knox IDE in light theme showing an open project with a TypeScript file, file explorer, and terminal" />
+        <p class="hero-meta">no account &middot; works offline &middot; MIT licensed</p>
+        <div class="shot fade">
+          <img class="shot-dark" src="./landing-assets/hero-dark.png" alt="Knox IDE with an open project, file explorer, and terminal running a Python script" />
+          <img class="shot-light" src="./landing-assets/hero-light.png" alt="Knox IDE in light theme with an open project and file explorer" />
         </div>
       </section>
-
-      <div class="value-strip">
-        <span class="pill reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5" /></svg>No sign-up</span>
-        <span class="pill reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5" /></svg>Works offline</span>
-        <span class="pill reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5" /></svg>Your code stays on your device</span>
-        <span class="pill reveal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6 9 17l-5-5" /></svg>MIT licensed</span>
-      </div>
 
       <section class="section" id="features">
-        <div class="section-head reveal">
-          <h2>Everything a real IDE needs &mdash; actually real</h2>
-          <p>No mocked panels, no "coming soon" buttons that do nothing. Every feature below is wired to real behavior.</p>
-        </div>
-        <div class="bento">
-          <div class="card card--lg reveal">
-            <div class="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16" /></svg>
+        <div class="wrap">
+          <p class="section-label">What's real</p>
+          <h2>Not a demo. Not mocked panels.</h2>
+          <dl class="list">
+            <div class="list-row fade">
+              <dt>Editor</dt>
+              <dd>The real Monaco editor &mdash; the same one behind VS Code. A genuine TypeScript language service, not a reimplementation.</dd>
             </div>
-            <h3>The real Monaco editor</h3>
-            <p>The same editing engine behind VS Code &mdash; a genuine TypeScript/JavaScript language service, not a reimplementation, plus syntax highlighting for two dozen more languages.</p>
-            <div class="card-tags"><span>IntelliSense</span><span>Multi-cursor</span><span>Large-file safe</span></div>
-          </div>
-          <div class="card card--md reveal">
-            <div class="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M18 9a9 9 0 0 1-9 9" /></svg>
+            <div class="list-row fade">
+              <dt>Filesystem</dt>
+              <dd>OPFS-backed, persistent, and yours &mdash; no upload, no sync required to start working.</dd>
             </div>
-            <h3>Real Git</h3>
-            <p>isomorphic-git in a worker &mdash; init, clone, commit, branch, diff, push and pull, with an inline Source Control panel.</p>
-          </div>
-          <div class="card card--md reveal">
-            <div class="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" x2="20" y1="19" y2="19" /></svg>
+            <div class="list-row fade">
+              <dt>Git</dt>
+              <dd>isomorphic-git in a worker. Commit, branch, diff, push, pull &mdash; a real Source Control panel.</dd>
             </div>
-            <h3>A real terminal</h3>
-            <p>xterm.js over a real shell &mdash; readline-style editing, word-jump, history, and Tab completion for commands and paths.</p>
-          </div>
-          <div class="card card--md reveal">
-            <div class="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /><path d="m9 13 3-3 3 3M12 10v9" /></svg>
+            <div class="list-row fade">
+              <dt>Terminal</dt>
+              <dd>A real shell with readline editing, history, and Tab completion &mdash; not a fake prompt.</dd>
             </div>
-            <h3>Cloud execution, optional</h3>
-            <p>Run real Python, C, C++, Java, Go, and Rust in a sandboxed container when you need a genuine compiler &mdash; JS/TS run locally, no network required.</p>
-          </div>
-          <div class="card card--md reveal">
-            <div class="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1" /><circle cx="12" cy="12" r="4" /></svg>
+            <div class="list-row fade">
+              <dt>Execution</dt>
+              <dd>JavaScript and TypeScript run locally. Python, C, C++, Java, Go, and Rust run in a sandboxed container when you need a real compiler.</dd>
             </div>
-            <h3>AI chat, bring your own key</h3>
-            <p>Real streaming chat against OpenAI-compatible or Anthropic endpoints. Your key stays in your browser &mdash; never proxied through a server.</p>
-          </div>
-          <div class="card card--sm reveal">
-            <div class="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20" /><circle cx="12" cy="12" r="10" /></svg>
+            <div class="list-row fade">
+              <dt>AI</dt>
+              <dd>Bring your own key. Streams straight from your browser to your provider &mdash; never proxied through a server.</dd>
             </div>
-            <h3>Offline-capable</h3>
-            <p>Service-worker precaching means a second visit loads instantly, even offline.</p>
-          </div>
-          <div class="card card--sm reveal">
-            <div class="card-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg>
-            </div>
-            <h3>No account required</h3>
-            <p>Open a project and start editing. Nothing to sign up for, nothing phoning home.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="how-it-works">
-        <div class="section-head reveal">
-          <h2>How it works</h2>
-          <p>Local-first isn't a slogan here &mdash; it's the actual order of operations.</p>
-        </div>
-        <div class="steps">
-          <div class="step reveal">
-            <h4>Open a tab</h4>
-            <p>OPFS gives you a real, persistent filesystem instantly &mdash; no install, no account, no loading screen waiting on a server.</p>
-          </div>
-          <div class="step reveal">
-            <h4>Edit, run, commit</h4>
-            <p>Real Monaco, a real shell, real Git &mdash; all operating on files that live in your browser, not on a remote disk.</p>
-          </div>
-          <div class="step reveal">
-            <h4>Reach for the cloud only if you need it</h4>
-            <p>Need a real compiler for C++ or Java? Cloud execution is one command away &mdash; and entirely optional.</p>
-          </div>
-          <div class="step reveal">
-            <h4>Close the tab, come back later</h4>
-            <p>Your workspace, open tabs, cursor position, and layout all auto-restore on reload &mdash; even offline.</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="themes">
-        <div class="section-head reveal">
-          <h2>Looks right, day or night</h2>
-          <p>Every surface &mdash; editor, terminal, panels &mdash; follows your system theme, with no separate "dark mode" bolted on after the fact.</p>
-        </div>
-        <div class="theme-showcase">
-          <figure class="theme-shot reveal">
-            <img src="./landing-assets/hero-dark.png" alt="Knox in dark theme" />
-            <figcaption><span class="swatch" style="background:#0e0f11"></span>Dark</figcaption>
-          </figure>
-          <figure class="theme-shot reveal">
-            <img src="./landing-assets/hero-light.png" alt="Knox in light theme" />
-            <figcaption><span class="swatch" style="background:#fbfaf8"></span>Light</figcaption>
-          </figure>
+          </dl>
         </div>
       </section>
 
       <section class="section">
-        <div class="cta-band reveal">
-          <h2>Your browser is ready. Are you?</h2>
-          <p>No installer, no account, no waiting. Open Knox and start writing code in under a second.</p>
-          <a class="btn btn-primary btn-lg" href="/app/">Open Knox &rarr;</a>
+        <div class="wrap close">
+          <h2>Your browser is ready.</h2>
+          <a class="btn" href="/app/">Open Knox</a>
         </div>
       </section>
     </main>
 
     <footer>
       <a class="brand" href="#top">
-        <svg viewBox="0 0 32 32" aria-hidden="true">
+        <svg viewBox="0 0 32 32" aria-hidden="true" width="18" height="18">
           <rect width="32" height="32" rx="7" fill="#0e0f11" />
           <path d="M11 7.5v17M11 16l9-8.5M11 16l9 8.5" stroke="#c9a567" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
         </svg>
-        Knox &mdash; a local-first, browser-native development environment
+        Knox
       </a>
-      <div class="footer-links">
-        <span>MIT Licensed</span>
-      </div>
+      <span class="foot-meta">MIT licensed</span>
     </footer>
 
     <script>
@@ -819,16 +479,18 @@
         var stored = localStorage.getItem("knox-landing-theme");
         if (stored === "light" || stored === "dark") root.setAttribute("data-theme", stored);
 
-        var toggle = document.getElementById("theme-toggle");
-        toggle.addEventListener("click", function () {
-          var current = root.getAttribute("data-theme");
-          var isLight = current === "light" || (!current && window.matchMedia("(prefers-color-scheme: light)").matches);
-          var next = isLight ? "dark" : "light";
+        function isLight() {
+          return root.getAttribute("data-theme") === "light" || (!root.getAttribute("data-theme") && window.matchMedia("(prefers-color-scheme: light)").matches);
+        }
+
+        document.getElementById("theme-toggle").addEventListener("click", function () {
+          var next = isLight() ? "dark" : "light";
           root.setAttribute("data-theme", next);
           localStorage.setItem("knox-landing-theme", next);
+          window.dispatchEvent(new Event("knox-theme-change"));
         });
 
-        var reveals = document.querySelectorAll(".reveal");
+        var reveals = document.querySelectorAll(".fade");
         if ("IntersectionObserver" in window) {
           var observer = new IntersectionObserver(
             function (entries) {
@@ -851,5 +513,6 @@
         }
       })();
     </script>
+    <script type="module" src="./orb.js"></script>
   </body>
 </html>
