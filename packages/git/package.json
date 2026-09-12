@@ -18,7 +18,8 @@
     "@knox/shared": "workspace:*",
     "@knox/filesystem": "workspace:*",
     "isomorphic-git": "^1.27.2",
-    "diff": "^5.2.0"
+    "diff": "^5.2.0",
+    "buffer": "^6.0.3"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

@@ -1,4 +1,5 @@
 import { createRpcClient } from "@knox/shared";
+import GitWorker from "./worker.ts?worker";
 import type { GitAuth, GitAuthor, GitBranchInfo, GitCommitInfo, GitDiffHunk, GitFileStatus } from "./types.js";
 
 interface GitRpcApi {
@@ -32,7 +33,7 @@ export class GitClient {
   ) {}
 
   static async create(workspaceId: string, fsBackend: string, directoryHandle?: FileSystemDirectoryHandle): Promise<GitClient> {
-    const worker = new Worker(new URL("./worker.js", import.meta.url), { type: "module" });
+    const worker = new GitWorker();
     const api = createRpcClient<GitRpcApi>(worker);
     await api.init(workspaceId, fsBackend, directoryHandle);
     return new GitClient(worker, api);

@@ -20,6 +20,9 @@ importers:
       '@knox/filesystem':
         specifier: workspace:*
         version: link:../../packages/filesystem
+      '@knox/git':
+        specifier: workspace:*
+        version: link:../../packages/git
       '@knox/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -122,6 +125,9 @@ importers:
       '@knox/shared':
         specifier: workspace:*
         version: link:../shared
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       diff:
         specifier: ^5.2.0
         version: 5.2.2

@@ -1,3 +1,7 @@
+import { Buffer } from "buffer";
+// isomorphic-git assumes Node's Buffer global; Vite doesn't polyfill it for workers.
+(globalThis as unknown as { Buffer: typeof Buffer }).Buffer = Buffer;
+
 import { createFileSystem, FileSystemAccessBackend } from "@knox/filesystem";
 import { exposeRpc, type VirtualFileSystem } from "@knox/shared";
 import { GitService } from "./git-service.js";

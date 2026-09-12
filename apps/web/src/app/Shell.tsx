@@ -1,17 +1,21 @@
 import { useEffect } from "react";
-import type { VirtualFileSystem, WorkspaceMetadata } from "@knox/shared";
+import { debounce, type VirtualFileSystem, type WorkspaceMetadata } from "@knox/shared";
 import { TitleBar } from "./TitleBar";
 import { ActivityBar } from "./ActivityBar";
 import { Explorer } from "./Explorer/Explorer";
 import { EditorArea } from "./EditorArea/EditorArea";
+import { GitPanel } from "./Git/GitPanel";
+import { DiffView } from "./Git/DiffView";
 import { BottomPanel } from "./BottomPanel/BottomPanel";
 import { AiPanel } from "./AiPanel/AiPanel";
 import { StatusBar } from "./StatusBar";
 import { PaletteHost } from "./Palette/PaletteHost";
 import { useLayoutStore } from "../state/layout-store";
 import { useEditorStore } from "../state/editor-store";
+import { useGitStore } from "../state/git-store";
 import { useDragResize } from "../hooks/useDragResize";
 import { commandRegistry } from "../commands/registry";
+import { getDirectoryHandle } from "../services/workspace-persistence";
 import "./Shell.css";
 
 export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: WorkspaceMetadata }): React.ReactElement {
@@ -27,6 +31,30 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
   const setPanelVisible = useLayoutStore((s) => s.setPanelVisible);
   const distractionFree = useLayoutStore((s) => s.distractionFree);
   const toggleDistractionFree = useLayoutStore((s) => s.toggleDistractionFree);
+  const activeActivityView = useLayoutStore((s) => s.activeActivityView);
+  const viewingDiff = useGitStore((s) => s.viewingDiff);
+  const connectGit = useGitStore((s) => s.connect);
+  const resetGit = useGitStore((s) => s.reset);
+
+  useEffect(() => {
+    void (async () => {
+      const handle = metadata.fsBackend === "file-system-access" ? await getDirectoryHandle(metadata.id) : undefined;
+      await connectGit(metadata.id, metadata.fsBackend, handle);
+    })();
+    return () => resetGit();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metadata.id]);
+
+  useEffect(() => {
+    const refresh = debounce(() => {
+      if (useGitStore.getState().isRepo) void useGitStore.getState().refresh();
+    }, 400);
+    const sub = fs.watch("/", refresh);
+    return () => {
+      sub.dispose();
+      refresh.cancel();
+    };
+  }, [fs]);
 
   const sidebarResize = useDragResize({ axis: "x", grows: "end", value: sidebarWidth, min: 180, max: 480, onChange: setSidebarWidth });
   const aiResize = useDragResize({ axis: "x", grows: "start", value: aiPanelWidth, min: 260, max: 560, onChange: setAiPanelWidth });
@@ -105,13 +133,13 @@ export function Shell({ fs, metadata }: { fs: VirtualFileSystem; metadata: Works
         {!distractionFree && sidebarVisible && (
           <>
             <div className="knox-shell__sidebar" style={{ width: sidebarWidth }}>
-              <Explorer fs={fs} workspaceName={metadata.name} />
+              {activeActivityView === "git" ? <GitPanel /> : <Explorer fs={fs} workspaceName={metadata.name} />}
             </div>
             <div className="knox-shell__splitter" onPointerDown={sidebarResize.onPointerDown} />
           </>
         )}
         <div className="knox-shell__main">
-          <EditorArea />
+          {viewingDiff ? <DiffView /> : <EditorArea />}
           <BottomPanel />
         </div>
         {!distractionFree && aiPanelVisible && (

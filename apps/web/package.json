@@ -17,6 +17,7 @@
     "@knox/shared": "workspace:*",
     "@knox/filesystem": "workspace:*",
     "@knox/editor": "workspace:*",
+    "@knox/git": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.1",

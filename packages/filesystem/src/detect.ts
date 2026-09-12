@@ -8,7 +8,8 @@ export interface FsCapabilities {
 
 export async function detectFsCapabilities(): Promise<FsCapabilities> {
   const opfs = "storage" in navigator && typeof navigator.storage?.getDirectory === "function";
-  const fileSystemAccess = typeof (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker === "function";
+  const fileSystemAccess =
+    typeof window !== "undefined" && typeof (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker === "function";
   const indexedDbSupported = typeof indexedDB !== "undefined";
   const storagePersistence = typeof navigator.storage?.persist === "function";
   return {

@@ -105,7 +105,13 @@ export class GitService {
   }
 
   async log(depth = 50): Promise<GitCommitInfo[]> {
-    const commits = await git.log({ fs: this.fs, dir: this.dir, depth });
+    // Repos with zero commits have no resolvable HEAD - that's not an error, just an empty log.
+    let commits;
+    try {
+      commits = await git.log({ fs: this.fs, dir: this.dir, depth });
+    } catch {
+      return [];
+    }
     return commits.map((c) => ({
       oid: c.oid,
       message: c.commit.message.replace(/\n$/, ""),
