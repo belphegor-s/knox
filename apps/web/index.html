@@ -1185,6 +1185,21 @@
         var ICON_DONE =
           '<span class="knox-log-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 7-7"/></svg></span>';
         var ICON_PENDING = '<span class="knox-log-icon"></span>';
+        var ICON_STOPPED =
+          '<span class="knox-log-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="5.5"/></svg></span>';
+
+        // The spinner and text-shimmer are CSS `infinite` animations - once an error stops the
+        // actual request, they need to be explicitly told to stop too, or they keep visually
+        // "loading" forever underneath the error message even though nothing is happening.
+        function freezeActiveLine() {
+          var activeLine = logEl.querySelector(".knox-log-line--active");
+          if (!activeLine) return;
+          activeLine.className = "knox-log-line";
+          var icon = activeLine.querySelector(".knox-log-icon");
+          if (icon) icon.outerHTML = ICON_STOPPED;
+          var text = activeLine.querySelector(".knox-shimmer-text");
+          if (text) text.removeAttribute("class");
+        }
 
         function renderSteps() {
           logEl.innerHTML = KNOX_STEPS.slice(0, stepIndex + 1)
@@ -1226,6 +1241,7 @@
         function showOverlayError(message) {
           if (stepTimer) clearTimeout(stepTimer);
           stepTimer = null;
+          freezeActiveLine();
           hintEl.hidden = true;
           errorText.textContent = message;
           errorBox.hidden = false;
