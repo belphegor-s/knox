@@ -26,6 +26,32 @@
 # root entirely. This file is Coolify-only (see header) so it's written for that assumption,
 # not for local `docker compose -f` invocations.
 services:
+  # Named "knox-account-db", not "postgres" - Coolify attaches every service in a compose stack
+  # to its shared "coolify" Docker network too (needed for `api`'s own public domain routing),
+  # and on that network Coolify's own internal control-plane database is already aliased
+  # "postgres" (container name coolify-db). A same-named service here would collide with that
+  # alias network-wide - hit exactly this once already with apps/session-broker (see its own
+  # compose file's comment on the same fix) - so this one is named distinctly from the start.
+  #
+  # Optional: only apps/api's account/API-key/execution-logging feature needs this (see
+  # apps/api/src/server.ts's HAS_DATABASE gate) - the original unauthenticated /api/execute
+  # proxy the browser terminal's `run` command uses works with zero database at all. Leave this
+  # service and DATABASE_URL out entirely for a deployment that only wants that original path.
+  knox-account-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: knox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set a password}
+      POSTGRES_DB: knox
+    volumes:
+      - knox-account-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U knox"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   worker:
     build:
       context: .
@@ -43,9 +69,13 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     depends_on:
-      - worker
+      worker:
+        condition: service_started
+      knox-account-db:
+        condition: service_healthy
     environment:
       KNOX_WORKER_URL: http://worker:8082
+      DATABASE_URL: postgres://knox:${POSTGRES_PASSWORD}@knox-account-db:5432/knox
     ports:
       - "8081:8081"
     restart: unless-stopped
@@ -55,3 +85,6 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+volumes:
+  knox-account-postgres-data:
