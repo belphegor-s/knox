@@ -8,7 +8,19 @@
 # fix for this - Coolify's docker-compose deploy always passes --project-directory as the repo
 # root regardless of where this file itself sits.
 services:
-  postgres:
+  # Named "knox-sessions-db", not "postgres" - Coolify attaches every service in this compose
+  # stack to its own shared "coolify" Docker network (needed for session-broker's Traefik
+  # routing below), and on THAT network Coolify's own internal control-plane database
+  # container is already aliased "postgres" (its container is named "coolify-db"). A same-named
+  # service here collides with that alias network-wide: DNS resolution for "postgres" can land
+  # on either database depending on which one Docker's embedded DNS happens to answer with, and
+  # Postgres deliberately returns the identical "password authentication failed" error whether
+  # the password is wrong OR the role doesn't exist at all (to avoid leaking which is true) - so
+  # this surfaced as an auth failure with a verified-correct password, not a hostname problem.
+  # Confirmed by reproducing it directly: the exact same image+credentials succeeded when only
+  # attached to this stack's own network, and failed the same way whenever also attached to the
+  # shared "coolify" network - a symptom of hitting the wrong "postgres", not a bad credential.
+  knox-sessions-db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: knox
@@ -28,10 +40,10 @@ services:
       context: .
       dockerfile: apps/session-broker/Dockerfile
     depends_on:
-      postgres:
+      knox-sessions-db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://knox:${POSTGRES_PASSWORD}@postgres:5432/knox
+      DATABASE_URL: postgres://knox:${POSTGRES_PASSWORD}@knox-sessions-db:5432/knox
       AWS_REGION: ${AWS_REGION}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
