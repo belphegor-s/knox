@@ -339,7 +339,29 @@
         font-family: var(--mono);
         font-size: 11.5px;
         color: var(--text-3);
+        margin: 0 0 18px;
+      }
+      .lang-chips {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex-wrap: wrap;
         margin: 0 0 52px;
+      }
+      .lang-chip {
+        font-family: var(--mono);
+        font-size: 11.5px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        color: var(--text-2);
+        background: var(--bg-1);
+      }
+      .lang-chip--muted {
+        border-style: dashed;
+        color: var(--text-3);
+        background: transparent;
       }
 
       .shot {
@@ -901,6 +923,13 @@
           <a class="btn btn-ghost btn-lg" href="#features">See what's real</a>
         </div>
         <p class="hero-meta">no signup / 15-minute sessions / self-hostable, unrestricted</p>
+        <div class="lang-chips" aria-label="Languages pre-installed in the hosted demo">
+          <span class="lang-chip">Java</span>
+          <span class="lang-chip">Python</span>
+          <span class="lang-chip">Node.js / TypeScript</span>
+          <span class="lang-chip">Bun</span>
+          <span class="lang-chip lang-chip--muted">+ any language, self-hosted</span>
+        </div>
         <div class="shot fade">
           <div class="mock-window" role="img" aria-label="Knox with an open TypeScript project: a file tree, tabbed editor, and syntax-highlighted code">
             <div class="mock-titlebar">
