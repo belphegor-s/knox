@@ -1,10 +1,28 @@
-# Minimal self-hosted deployment: `docker compose up web` alone is everything Knox needs for
-# local-first editing (filesystem, Git, editor, session persistence) - all of that runs in the
-# browser, no database or cache required. The api/worker/runner services below are the
-# OPTIONAL cloud execution path (Python/C/C++/Java/Go/Rust) - bring them up too
-# (`docker compose --profile cloud-execution up`) only if you want that. Nothing about the base
-# deployment depends on them; nginx's /api/ route degrades to a clean 502 if they're absent.
+# `docker compose up` alone gives a self-hoster real VS Code (the `vscode` service below) with
+# no restrictions of any kind - no session time limit, no language limit, no auth gate. That's
+# the whole point of self-hosting versus the public knox.procd.cc demo, which puts the SAME
+# vscode-runner image behind apps/session-broker's 15-minute/30-minutes-per-day orchestration
+# instead (see docs/cloud-runtime.md). `web` (the original custom Monaco/xterm/OPFS shell) is
+# kept running alongside it, not replaced - it's a real, working, just-stabilized product on
+# its own, just no longer the primary path. The api/worker/runner services are the OPTIONAL
+# batch code-execution path - bring them up too (`docker compose --profile cloud-execution up`)
+# only if you want that; nothing about the base deployment depends on them.
 services:
+  vscode:
+    build:
+      context: .
+      dockerfile: vscode-runner.Dockerfile
+    ports:
+      - "${KNOX_VSCODE_PORT:-8090}:8080"
+    environment:
+      # No PASSWORD set: self-hosted means no auth gate by default. Set PASSWORD yourself
+      # (docker compose run -e PASSWORD=... or a .env file) if this host is reachable by
+      # anyone other than you.
+      PASSWORD: ${KNOX_VSCODE_PASSWORD:-}
+    volumes:
+      - knox-vscode-data:/home/coder/project
+    restart: unless-stopped
+
   web:
     build:
       context: ..
@@ -69,20 +87,5 @@ services:
       retries: 3
       start_period: 5s
 
-  # --- optional, for future cloud features (not required to run Knox) --------
-  # postgres:
-  #   image: postgres:16-alpine
-  #   environment:
-  #     POSTGRES_USER: knox
-  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set a password}
-  #     POSTGRES_DB: knox
-  #   volumes:
-  #     - knox-postgres-data:/var/lib/postgresql/data
-  #   restart: unless-stopped
-  #
-  # redis:
-  #   image: redis:7-alpine
-  #   restart: unless-stopped
-
-# volumes:
-#   knox-postgres-data:
+volumes:
+  knox-vscode-data:
