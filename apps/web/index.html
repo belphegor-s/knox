@@ -59,6 +59,13 @@
         --text-1: #d8dadd;
         --text-2: #8b9099;
         --text-3: #5c6066;
+        /* Exact values from packages/editor/src/theme.ts's knox-dark Monaco theme, not
+           picked for the page - the mock editor/terminal below use the real syntax colors
+           so they read as an accurate diagram of the product, not a stand-in illustration. */
+        --syn-keyword: #d99a6c;
+        --syn-string: #9fb87a;
+        --syn-number: #c9a5e0;
+        --syn-function: #e0c185;
         color-scheme: dark;
       }
       @media (prefers-color-scheme: light) {
@@ -73,6 +80,10 @@
           --text-1: #24262b;
           --text-2: #63666d;
           --text-3: #96999f;
+          --syn-keyword: #9a5a1f;
+          --syn-string: #3f6b2a;
+          --syn-number: #6b4a91;
+          --syn-function: #8a6a1f;
           color-scheme: light;
         }
       }
@@ -87,6 +98,10 @@
         --text-1: #24262b;
         --text-2: #63666d;
         --text-3: #96999f;
+        --syn-keyword: #9a5a1f;
+        --syn-string: #3f6b2a;
+        --syn-number: #6b4a91;
+        --syn-function: #8a6a1f;
         color-scheme: light;
       }
 
@@ -347,20 +362,123 @@
       .shot {
         aspect-ratio: 2.3 / 1;
       }
-      .shot img {
+
+      /* ---------- mock editor (hero) -----------------------------------------------------
+         A recreation, not a screenshot: every color below is copied from the real Monaco
+         theme (packages/editor/src/theme.ts), not chosen for looks, so this reads as an
+         accurate diagram of the product rather than a stand-in. Solves the actual problem a
+         screenshot had here too - crisp at any size, matches whichever theme is active
+         exactly, no cropping or scaling decisions to keep re-litigating. */
+      .mock-window {
         width: 100%;
         height: 100%;
-        object-fit: cover;
-        object-position: top;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-1);
+        text-align: left;
       }
-      .shot .shot-light {
-        display: none;
+      .mock-titlebar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 18px;
+        border-bottom: 1px solid var(--border);
+        font-size: 12.5px;
+        color: var(--text-2);
+        flex-shrink: 0;
       }
-      :root[data-theme="light"] .shot .shot-dark {
-        display: none;
+      .mock-crumb-sep {
+        color: var(--text-3);
+        margin: 0 5px;
       }
-      :root[data-theme="light"] .shot .shot-light {
-        display: block;
+      .mock-badge {
+        color: var(--text-3);
+        font-size: 11.5px;
+      }
+      .mock-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+      .mock-sidebar {
+        width: 152px;
+        flex-shrink: 0;
+        padding: 14px 8px;
+        border-right: 1px solid var(--border);
+      }
+      .mock-sidebar-label {
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        color: var(--text-3);
+        padding: 0 8px 10px;
+      }
+      .mock-file {
+        padding: 5px 8px;
+        border-radius: 5px;
+        color: var(--text-2);
+        font-size: 12.5px;
+        white-space: nowrap;
+      }
+      .mock-file--active {
+        background: var(--bg-3);
+        color: var(--text-0);
+      }
+      .mock-editor {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .mock-tabs {
+        display: flex;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .mock-tab {
+        padding: 9px 18px;
+        font-size: 12.5px;
+        color: var(--text-3);
+        border-right: 1px solid var(--border);
+      }
+      .mock-tab--active {
+        color: var(--text-0);
+        box-shadow: inset 0 -2px var(--accent);
+      }
+      .mock-code {
+        padding: 16px 0;
+        overflow: hidden;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.75;
+      }
+      .mock-line {
+        padding: 0 22px;
+        white-space: pre;
+        color: var(--text-1);
+      }
+      .mock-ln {
+        display: inline-block;
+        width: 24px;
+        color: var(--text-3);
+      }
+      .mock-kw {
+        color: var(--syn-keyword);
+      }
+      .mock-str {
+        color: var(--syn-string);
+      }
+      .mock-num {
+        color: var(--syn-number);
+      }
+      .mock-fn {
+        color: var(--syn-function);
+      }
+      /* Unlike a flat screenshot, this can just stop showing the sidebar below the width it
+         has room for, instead of clipping it mid-column and cutting the code off with it. */
+      @media (max-width: 600px) {
+        .mock-sidebar {
+          display: none;
+        }
       }
 
       /* ---------- sections ---------- */
@@ -444,28 +562,50 @@
         aspect-ratio: 3 / 1;
         overflow: hidden;
       }
-      .card-shot img {
+
+      /* ---------- mock terminal (feature card) ------------------------------------------- */
+      .mock-terminal {
         width: 100%;
         height: 100%;
-        display: block;
-        object-fit: cover;
-        object-position: top left;
-        /* The taller box above only crops width - height gets scaled to fit, which would
-           otherwise just enlarge the empty space the source screenshot already has below its
-           last terminal line. This scales the whole (already-cropped) image up further from
-           its top-left corner so that empty margin gets pushed out past the box's own
-           overflow:hidden instead of stretched to fill it. */
-        transform: scale(1.3);
-        transform-origin: top left;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-1);
+        text-align: left;
       }
-      .card-shot .shot-light {
-        display: none;
+      .mock-term-tabs {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 9px 14px;
+        border-bottom: 1px solid var(--border);
+        font-size: 11.5px;
+        flex-shrink: 0;
       }
-      :root[data-theme="light"] .card-shot .shot-dark {
-        display: none;
+      .mock-term-tab {
+        padding: 3px 9px;
+        border-radius: 5px;
+        color: var(--text-3);
       }
-      :root[data-theme="light"] .card-shot .shot-light {
-        display: block;
+      .mock-term-tab--active {
+        color: var(--text-0);
+        background: var(--bg-3);
+      }
+      .mock-term-body {
+        padding: 12px 18px;
+        color: var(--text-1);
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.85;
+      }
+      .mock-prompt {
+        color: var(--accent);
+      }
+      .mock-cursor {
+        display: inline-block;
+        width: 6px;
+        height: 13px;
+        background: var(--accent);
+        vertical-align: -2px;
       }
 
       /* ---------- steps ---------- */
@@ -591,8 +731,40 @@
         </div>
         <p class="hero-meta">no signup / works offline / MIT licensed</p>
         <div class="shot fade">
-          <img class="shot-dark" src="./landing-assets/hero-dark.png" alt="Knox IDE with an open TypeScript project, file explorer, and tabs" />
-          <img class="shot-light" src="./landing-assets/hero-light.png" alt="Knox IDE in light theme with an open TypeScript project" />
+          <div class="mock-window" role="img" aria-label="Knox with an open TypeScript project: a file tree, tabbed editor, and syntax-highlighted code">
+            <div class="mock-titlebar">
+              <span>Knox<span class="mock-crumb-sep">/</span>task-api</span>
+              <span class="mock-badge">Local (OPFS)</span>
+            </div>
+            <div class="mock-body">
+              <div class="mock-sidebar">
+                <div class="mock-sidebar-label">TASK-API</div>
+                <div class="mock-file">bench.ts</div>
+                <div class="mock-file">README.md</div>
+                <div class="mock-file">router.ts</div>
+                <div class="mock-file mock-file--active">server.ts</div>
+              </div>
+              <div class="mock-editor">
+                <div class="mock-tabs">
+                  <span class="mock-tab">router.ts</span>
+                  <span class="mock-tab mock-tab--active">server.ts</span>
+                  <span class="mock-tab">bench.ts</span>
+                </div>
+                <div class="mock-code">
+                  <div class="mock-line"><span class="mock-ln">1</span><span class="mock-kw">import</span> { createServer } <span class="mock-kw">from</span> <span class="mock-str">"node:http"</span>;</div>
+                  <div class="mock-line"><span class="mock-ln">2</span><span class="mock-kw">import</span> { handleRequest } <span class="mock-kw">from</span> <span class="mock-str">"./router.js"</span>;</div>
+                  <div class="mock-line"><span class="mock-ln">3</span></div>
+                  <div class="mock-line"><span class="mock-ln">4</span><span class="mock-kw">const</span> server = <span class="mock-fn">createServer</span>((req, res) =&gt; {</div>
+                  <div class="mock-line"><span class="mock-ln">5</span>&nbsp;&nbsp;<span class="mock-fn">handleRequest</span>(req, res);</div>
+                  <div class="mock-line"><span class="mock-ln">6</span>});</div>
+                  <div class="mock-line"><span class="mock-ln">7</span></div>
+                  <div class="mock-line"><span class="mock-ln">8</span>server.<span class="mock-fn">listen</span>(<span class="mock-num">3000</span>, () =&gt; {</div>
+                  <div class="mock-line"><span class="mock-ln">9</span>&nbsp;&nbsp;console.<span class="mock-fn">log</span>(<span class="mock-str">"task-api listening on :3000"</span>);</div>
+                  <div class="mock-line"><span class="mock-ln">10</span>});</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -611,8 +783,18 @@
           </div>
           <div class="card card--half">
             <div class="card-shot">
-              <img class="shot-dark" src="./landing-assets/terminal-dark.png" alt="Knox terminal running a real TypeScript file and printing its output" />
-              <img class="shot-light" src="./landing-assets/terminal-light.png" alt="Knox terminal in light theme" />
+              <div class="mock-terminal" role="img" aria-label="Knox terminal running bench.ts and printing its output">
+                <div class="mock-term-tabs">
+                  <span class="mock-term-tab mock-term-tab--active">Terminal</span>
+                  <span class="mock-term-tab">Problems</span>
+                </div>
+                <div class="mock-term-body">
+                  <div><span class="mock-prompt">$</span> run bench.ts</div>
+                  <div>found 15 primes under 50</div>
+                  <div>2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47</div>
+                  <div><span class="mock-prompt">$</span> <span class="mock-cursor"></span></div>
+                </div>
+              </div>
             </div>
             <div class="card-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
