@@ -4,10 +4,13 @@ import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } fro
 import type { RunOptions } from "./docker-runner.js";
 
 // Fargate cold start (task provisioning + image pull) commonly takes 10-30s before the
-// container's own 10s in-script timeout even starts running - this backstop has to be well
-// clear of that, unlike the local Docker path's 30s (which only waits on an already-running
-// host's docker daemon, no provisioning).
-const TASK_TIMEOUT_MS = 90_000;
+// container's own in-script timeout even starts running - this backstop has to be well clear
+// of that, unlike the local Docker path's (which only waits on an already-running host's
+// docker daemon, no provisioning). 60s of cold-start headroom on top of whatever the caller's
+// own in-container RUN_TIMEOUT is, covering both the original 10s interactive default and
+// apps/api's /v1/execute requesting up to the full 120s cap.
+const DEFAULT_RUN_TIMEOUT_MS = 10_000;
+const COLD_START_BUFFER_MS = 60_000;
 const POLL_INTERVAL_MS = 1_500;
 
 const REGION = process.env.AWS_REGION;
@@ -53,13 +56,14 @@ async function readBody(body: unknown): Promise<string> {
  * nothing polls a task's stdout/stderr live - so code goes in and output comes back via S3
  * (see infra/runner/knox-run's ECS branch), and results only become available once the task
  * has fully finished. Callers see one batched onOutput per stream, not a live stream. */
-export async function runOnFargate({ language, filename, code, onOutput }: RunOptions): Promise<number> {
+export async function runOnFargate({ language, filename, code, onOutput, timeoutMs }: RunOptions): Promise<number> {
   if (!CLUSTER || !TASK_DEFINITION || !CODE_BUCKET || SUBNETS.length === 0) {
     throw new Error(
       "ECS execution backend is misconfigured: KNOX_ECS_CLUSTER, KNOX_ECS_TASK_DEFINITION, KNOX_CODE_BUCKET, and KNOX_ECS_SUBNETS are all required.",
     );
   }
 
+  const runTimeoutMs = timeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
   const id = randomUUID();
   const srcKey = `exec/${id}/src/${filename}`;
   const outputPrefix = `exec/${id}/out/`;
@@ -89,6 +93,7 @@ export async function runOnFargate({ language, filename, code, onOutput }: RunOp
               environment: [
                 { name: "CODE_S3_URI", value: `s3://${CODE_BUCKET}/${srcKey}` },
                 { name: "OUTPUT_S3_PREFIX", value: `s3://${CODE_BUCKET}/${outputPrefix}` },
+                { name: "RUN_TIMEOUT", value: String(Math.ceil(runTimeoutMs / 1000)) },
               ],
             },
           ],
@@ -102,7 +107,7 @@ export async function runOnFargate({ language, filename, code, onOutput }: RunOp
     taskArn = runResult.tasks?.[0]?.taskArn;
     if (!taskArn) throw new Error("ECS RunTask returned no task ARN");
 
-    const exitCode = await pollUntilStopped(taskArn);
+    const exitCode = await pollUntilStopped(taskArn, runTimeoutMs + COLD_START_BUFFER_MS);
     const [stdout, stderr] = await Promise.all([
       readOutputObject(`${outputPrefix}stdout.log`),
       readOutputObject(`${outputPrefix}stderr.log`),
@@ -115,8 +120,8 @@ export async function runOnFargate({ language, filename, code, onOutput }: RunOp
   }
 }
 
-async function pollUntilStopped(taskArn: string): Promise<number> {
-  const deadline = Date.now() + TASK_TIMEOUT_MS;
+async function pollUntilStopped(taskArn: string, taskTimeoutMs: number): Promise<number> {
+  const deadline = Date.now() + taskTimeoutMs;
   for (;;) {
     const { tasks } = await ecs().send(new DescribeTasksCommand({ cluster: CLUSTER, tasks: [taskArn] }));
     const task = tasks?.[0];

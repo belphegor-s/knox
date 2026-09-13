@@ -9,8 +9,13 @@ app.get("/health", (_req, res) => {
   res.status(200).send("ok");
 });
 
+// Absolute ceiling regardless of what a caller asks for - this is what makes "max execution
+// time of 2 minutes" true no matter which route (the old unauthenticated /api/execute or the
+// new API-key-gated /v1/execute) ends up calling this with a client-supplied value.
+const MAX_TIMEOUT_MS = 120_000;
+
 app.post("/execute", (req, res) => {
-  const { language, filename, code } = req.body ?? {};
+  const { language, filename, code, timeoutMs } = req.body ?? {};
 
   if (typeof language !== "string" || !isSupportedLanguage(language)) {
     res.status(400).json({ error: `Unsupported language: ${String(language)}` });
@@ -29,6 +34,8 @@ app.post("/execute", (req, res) => {
     res.status(400).json({ error: filenameError });
     return;
   }
+  const requestedTimeoutMs = typeof timeoutMs === "number" && Number.isFinite(timeoutMs) ? timeoutMs : undefined;
+  const clampedTimeoutMs = requestedTimeoutMs != null ? Math.min(Math.max(requestedTimeoutMs, 1000), MAX_TIMEOUT_MS) : undefined;
 
   res.setHeader("Content-Type", "application/x-ndjson");
   res.setHeader("Cache-Control", "no-cache");
@@ -43,6 +50,7 @@ app.post("/execute", (req, res) => {
     language,
     filename,
     code,
+    timeoutMs: clampedTimeoutMs,
     onOutput: (stream, data) => writeEvent({ type: stream, data }),
   })
     .then((exitCode) => writeEvent({ type: "exit", code: exitCode }))

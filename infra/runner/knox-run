@@ -18,7 +18,10 @@ set -eu
 
 LANGUAGE="$1"
 FILENAME="$2"
-RUN_TIMEOUT=10
+# Overridable per-invocation (apps/worker passes this through as a container/task override) -
+# the interactive `run <file>` terminal command still gets the original 10s default, while the
+# public execution API (apps/api's /v1/execute) asks for up to the full 120s cap explicitly.
+RUN_TIMEOUT="${RUN_TIMEOUT:-10}"
 
 cd /workspace
 

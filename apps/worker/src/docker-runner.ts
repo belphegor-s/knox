@@ -8,16 +8,24 @@ export interface RunOptions {
   filename: string;
   code: string;
   onOutput: OutputWriter;
+  /** In-container `timeout` for the compiled/interpreted program itself, in ms. Defaults to
+   * the original 10s (matching the interactive `run <file>` terminal command's expectation of
+   * a quick result) - callers that need longer (apps/api's /v1/execute, up to the 2-minute
+   * cap) pass this explicitly. The wall-clock backstop below is always a further 20s past
+   * this, covering docker/compiler overhead the in-container timeout doesn't wrap. */
+  timeoutMs?: number;
 }
 
 const RUNNER_IMAGE = process.env.KNOX_RUNNER_IMAGE ?? "knox-runner:latest";
-const WALL_CLOCK_TIMEOUT_MS = 30_000;
+const DEFAULT_RUN_TIMEOUT_MS = 10_000;
+const BACKSTOP_MARGIN_MS = 20_000;
 
 /** Runs untrusted, user-submitted source in a throwaway, sandboxed container - never on this
  * host process directly. Every flag below narrows what that code can touch; removing one
  * re-opens a real escape (network exfiltration, resource exhaustion, host filesystem access). */
-export function runInContainer({ language, filename, code, onOutput }: RunOptions): Promise<number> {
+export function runInContainer({ language, filename, code, onOutput, timeoutMs }: RunOptions): Promise<number> {
   return new Promise((resolve, reject) => {
+    const runTimeoutMs = timeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
     const args = [
       "run",
       "--rm",
@@ -43,6 +51,8 @@ export function runInContainer({ language, filename, code, onOutput }: RunOption
       "ALL",
       "--user",
       "1000:1000",
+      "--env",
+      `RUN_TIMEOUT=${Math.ceil(runTimeoutMs / 1000)}`,
       RUNNER_IMAGE,
       language,
       filename,
@@ -57,7 +67,7 @@ export function runInContainer({ language, filename, code, onOutput }: RunOption
     const killTimer = setTimeout(() => {
       onOutput("stderr", "\nExecution timed out (server-side limit).\n");
       child.kill("SIGKILL");
-    }, WALL_CLOCK_TIMEOUT_MS);
+    }, runTimeoutMs + BACKSTOP_MARGIN_MS);
 
     child.stdout.on("data", (chunk: Buffer) => onOutput("stdout", chunk.toString("utf8")));
     child.stderr.on("data", (chunk: Buffer) => onOutput("stderr", chunk.toString("utf8")));
