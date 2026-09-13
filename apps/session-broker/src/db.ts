@@ -11,12 +11,14 @@ const SCHEMA = `
     fingerprint_id TEXT NOT NULL,
     task_arn TEXT NOT NULL,
     public_ip TEXT NOT NULL,
-    password TEXT NOT NULL,
     started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ NOT NULL,
     stopped_at TIMESTAMPTZ
   );
   CREATE INDEX IF NOT EXISTS sessions_identity_idx ON sessions (ip, fingerprint_id, started_at);
+  -- Dropped in favor of network-level access control (see sessions.ts's createSession) -
+  -- ALTER rather than a fresh CREATE TABLE so already-deployed databases pick it up too.
+  ALTER TABLE sessions DROP COLUMN IF EXISTS password;
 `;
 
 export async function initSchema(): Promise<void> {

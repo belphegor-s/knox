@@ -26,7 +26,6 @@ export class SessionLimitError extends Error {}
 export interface SessionRecord {
   id: string;
   publicIp: string;
-  password: string;
   expiresAt: Date;
 }
 
@@ -88,8 +87,16 @@ export async function createSession(ip: string, fingerprintId: string): Promise<
   }
 
   const id = randomUUID();
-  const password = randomUUID();
 
+  // No PASSWORD override here on purpose: code-server's --auth password mode needs the
+  // password submitted through its own login form (a cookie, set server-side), not a URL
+  // query string - there is no code-server-supported way to hand a generated password to a
+  // browser and land it already logged in. Access control for a session instead comes from
+  // the network: the security group on this task allows inbound 8080 from ONLY the broker's
+  // own host, so a browser can never reach code-server directly no matter what it knows -
+  // every request is forced through this proxy, gated on knowing this session's unguessable
+  // (UUIDv4) id. vscode-entrypoint.sh falls back to --auth none whenever PASSWORD is unset,
+  // which is exactly what self-hosted sessions already run with.
   const run = await ecs.send(
     new RunTaskCommand({
       cluster: CLUSTER,
@@ -98,9 +105,6 @@ export async function createSession(ip: string, fingerprintId: string): Promise<
       count: 1,
       networkConfiguration: {
         awsvpcConfiguration: { subnets: SUBNETS, securityGroups: SECURITY_GROUPS.length > 0 ? SECURITY_GROUPS : undefined, assignPublicIp: "ENABLED" },
-      },
-      overrides: {
-        containerOverrides: [{ name: CONTAINER_NAME, environment: [{ name: "PASSWORD", value: password }] }],
       },
     }),
   );
@@ -116,11 +120,11 @@ export async function createSession(ip: string, fingerprintId: string): Promise<
   const expiresAt = new Date(Date.now() + Math.min(SESSION_DURATION_MS, remainingTodayMs));
 
   await pool.query(
-    `INSERT INTO sessions (id, ip, fingerprint_id, task_arn, public_ip, password, expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [id, ip, fingerprintId, taskArn, publicIp, password, expiresAt],
+    `INSERT INTO sessions (id, ip, fingerprint_id, task_arn, public_ip, expires_at) VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id, ip, fingerprintId, taskArn, publicIp, expiresAt],
   );
 
-  return { id, publicIp, password, expiresAt };
+  return { id, publicIp, expiresAt };
 }
 
 export async function lookupActiveSession(id: string): Promise<{ publicIp: string; expiresAt: Date } | null> {

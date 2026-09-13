@@ -27,8 +27,7 @@ app.post("/api/sessions", async (req, res) => {
     const domain = process.env.KNOX_SESSION_DOMAIN;
     res.status(201).json({
       sessionId: session.id,
-      url: domain ? `https://${session.id}.${domain}/?password=${session.password}` : null,
-      password: session.password,
+      url: domain ? `https://${session.id}.${domain}/` : null,
       expiresAt: session.expiresAt.toISOString(),
     });
   } catch (err) {
