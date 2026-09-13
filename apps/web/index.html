@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#0b0c0e" />
     <meta
       name="description"
-      content="Knox is a local-first, browser-native IDE: a real filesystem, a real Monaco editor, real Git, and a real terminal, all running in your browser tab with no server round-trip."
+      content="Knox runs real VS Code in your browser: a live sandbox, no install and no signup, open in one click. Self-host it for unrestricted, unlimited use."
     />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
@@ -19,7 +19,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Knox" />
     <meta property="og:title" content="Knox" />
-    <meta property="og:description" content="A real filesystem, a real editor, real Git, and a real terminal. In your browser tab." />
+    <meta property="og:description" content="Real VS Code, open in one click. No install, no signup. Self-hostable for unrestricted use." />
     <meta property="og:image" content="/og-image.png?v=2" />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -978,8 +978,8 @@
             <div class="card-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16" /></svg>
             </div>
-            <h3>The real Monaco editor</h3>
-            <p>The same editing engine behind VS Code. A genuine TypeScript language service, not a reimplementation, plus syntax highlighting for two dozen more languages.</p>
+            <h3>Real VS Code</h3>
+            <p>The actual editor, not a lookalike built on the same engine. Full IntelliSense, extensions from Open VSX, every keyboard shortcut you already know.</p>
           </div>
           <div class="card card--half">
             <div class="card-shot">
@@ -989,7 +989,7 @@
                   <span class="mock-term-tab">Problems</span>
                 </div>
                 <div class="mock-term-body">
-                  <div><span class="mock-prompt">$</span> run bench.ts</div>
+                  <div><span class="mock-prompt">$</span> python bench.py</div>
                   <div>found 15 primes under 50</div>
                   <div>2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47</div>
                   <div><span class="mock-prompt">$</span> <span class="mock-cursor"></span></div>
@@ -1000,28 +1000,28 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" /></svg>
             </div>
             <h3>A real terminal</h3>
-            <p>xterm.js over a real shell. Readline editing, history, and Tab completion, executing files for real and streaming their output back.</p>
+            <p>A full Linux shell in the same container as your files, not an emulation of one. Install packages, run a compiler, use whatever's already on the box.</p>
           </div>
           <div class="card card--third">
             <div class="card-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M18 9a9 9 0 0 1-9 9" /></svg>
             </div>
             <h3>Real Git</h3>
-            <p>isomorphic-git in a worker. Commit, branch, diff, push, and pull, with an inline Source Control panel.</p>
+            <p>VS Code's own Source Control panel, backed by a real git binary. Commit, branch, diff, push, and pull - the same as typing it in a terminal.</p>
           </div>
           <div class="card card--third">
             <div class="card-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2Z" /></svg>
             </div>
             <h3>A real filesystem</h3>
-            <p>OPFS-backed and persistent. Your files are yours from the first keystroke, no upload required.</p>
+            <p>Every file lives in the session's own container, not synced up from your machine. Self-hosted, it persists on a real Docker volume across restarts.</p>
           </div>
           <div class="card card--third">
             <div class="card-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" /></svg>
             </div>
-            <h3>Cloud execution, optional</h3>
-            <p>Python, C, C++, Java, Go, and Rust run in a sandboxed container when you need a real compiler. JS and TS run locally, no network required.</p>
+            <h3>Isolated per session</h3>
+            <p>The public demo runs each session in its own container, torn down the moment it ends. Self-host it and there's no isolation boundary to think about - it's just yours.</p>
           </div>
         </div>
       </section>
@@ -1029,36 +1029,36 @@
       <section class="section" id="how-it-works">
         <div class="section-head fade">
           <span class="eyebrow">how it works</span>
-          <h2>Local-first, in the actual order of operations</h2>
+          <h2>One click, in the actual order of operations</h2>
         </div>
         <div class="steps fade">
           <div class="step">
             <span>01</span>
-            <h4>Open a tab</h4>
-            <p>OPFS gives you a real, persistent filesystem instantly. No install, no account, no loading screen.</p>
+            <h4>Click Open Knox</h4>
+            <p>A real container boots with VS Code already running inside it. No account, no install.</p>
           </div>
           <div class="step">
             <span>02</span>
-            <h4>Edit, run, commit</h4>
-            <p>Real Monaco, a real shell, real Git, all operating on files that live in your browser.</p>
+            <h4>Code, run, commit</h4>
+            <p>The full IDE - editor, terminal, Git, extensions - running server-side, not emulated in your tab.</p>
           </div>
           <div class="step">
             <span>03</span>
-            <h4>Reach for the cloud if you need it</h4>
-            <p>A real compiler for C++ or Java is one command away, and entirely optional.</p>
+            <h4>15 minutes, then it's gone</h4>
+            <p>The public demo tears the container down automatically. That's the trade-off for not needing an account.</p>
           </div>
           <div class="step">
             <span>04</span>
-            <h4>Close the tab, come back later</h4>
-            <p>Your workspace and open tabs auto-restore on reload, even offline.</p>
+            <h4>Self-host for the real thing</h4>
+            <p>Same image, no timer, no language limit. <code>docker compose up</code> and it's yours, unrestricted.</p>
           </div>
         </div>
       </section>
 
       <section class="section">
         <div class="close fade">
-          <h2>Your browser is ready.</h2>
-          <p>No installer, no account, no waiting.</p>
+          <h2>Real VS Code is one click away.</h2>
+          <p>No installer, no account required.</p>
           <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
         </div>
       </section>
