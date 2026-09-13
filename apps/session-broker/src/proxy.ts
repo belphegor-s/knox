@@ -1,4 +1,5 @@
 import httpProxy from "http-proxy";
+import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import { lookupActiveSession } from "./sessions.js";
@@ -27,13 +28,13 @@ interface CountdownRequest extends IncomingMessage {
   __knoxExpiresAt?: string;
 }
 
-function countdownSnippet(expiresAtIso: string): string {
-  // Inline, dependency-free: this is injected into someone else's page, so it must not assume
-  // anything about what code-server's own JS environment looks like.
-  return `<div id="knox-session-countdown" style="position:fixed;bottom:14px;right:14px;z-index:2147483647;font:500 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:#1a1a1acc;color:#f2ede6;padding:7px 12px;border-radius:7px;border:1px solid #ffffff26;backdrop-filter:blur(6px);pointer-events:none;">Knox session · <span id="knox-session-countdown-time">15:00</span></div>
-<script>
-(function () {
-  var expiresAt = new Date(${JSON.stringify(expiresAtIso)}).getTime();
+// code-server serves a strict CSP (script-src limited to 'self' plus specific sha256 hashes -
+// no 'unsafe-inline'), so a plain injected <script> is silently blocked by the browser and the
+// countdown just freezes at its initial value. This exact text is hashed below and the hash is
+// added to the proxied response's own CSP header, rather than weakening the policy generally -
+// verified against a real session's CSP violation report before landing this.
+const COUNTDOWN_SCRIPT_BODY = `(function () {
+  var expiresAt = new Date(window.__knoxExpiresAt).getTime();
   var el = document.getElementById("knox-session-countdown-time");
   var box = document.getElementById("knox-session-countdown");
   function tick() {
@@ -52,8 +53,28 @@ function countdownSnippet(expiresAtIso: string): string {
   }
   var timer = setInterval(tick, 1000);
   tick();
-})();
-</script>`;
+})();`;
+
+const COUNTDOWN_SCRIPT_HASH = `'sha256-${createHash("sha256").update(COUNTDOWN_SCRIPT_BODY, "utf8").digest("base64")}'`;
+
+function countdownSnippet(expiresAtIso: string): { html: string; extraHashes: readonly string[] } {
+  // The expiry timestamp itself goes on a separate, tiny inline script (its own hash, computed
+  // per-session) rather than being templated into COUNTDOWN_SCRIPT_BODY - that keeps the main
+  // script's text (and therefore its hash) identical across every session.
+  const setExpiry = `window.__knoxExpiresAt=${JSON.stringify(expiresAtIso)};`;
+  const setExpiryHash = `'sha256-${createHash("sha256").update(setExpiry, "utf8").digest("base64")}'`;
+  return {
+    html: `<div id="knox-session-countdown" style="position:fixed;bottom:14px;right:14px;z-index:2147483647;font:500 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:#1a1a1acc;color:#f2ede6;padding:7px 12px;border-radius:7px;border:1px solid #ffffff26;backdrop-filter:blur(6px);pointer-events:none;">Knox session · <span id="knox-session-countdown-time">15:00</span></div>
+<script>${setExpiry}</script>
+<script>${COUNTDOWN_SCRIPT_BODY}</script>`,
+    extraHashes: [setExpiryHash, COUNTDOWN_SCRIPT_HASH],
+  } as const;
+}
+
+function allowScriptHashesInCsp(csp: string, hashes: readonly string[]): string {
+  // No trailing path segment after the variable, no rewriting of anything else in the
+  // directive - just widen script-src by appending our two hashes to whatever it already lists.
+  return csp.replace(/script-src([^;]*)/, (_match, rest: string) => `script-src${rest} ${hashes.join(" ")}`);
 }
 
 proxy.on("proxyRes", (proxyRes, req, res) => {
@@ -65,12 +86,17 @@ proxy.on("proxyRes", (proxyRes, req, res) => {
   proxyRes.on("end", () => {
     const contentType = proxyRes.headers["content-type"] ?? "";
     let body = Buffer.concat(chunks);
+    const headers = { ...proxyRes.headers };
     if (proxyRes.statusCode === 200 && contentType.includes("text/html")) {
       const html = body.toString("utf8");
-      const snippet = countdownSnippet(expiresAt);
+      const { html: snippet, extraHashes } = countdownSnippet(expiresAt);
       body = Buffer.from(html.includes("</body>") ? html.replace("</body>", `${snippet}</body>`) : html + snippet, "utf8");
+      const csp = headers["content-security-policy"];
+      if (typeof csp === "string") {
+        headers["content-security-policy"] = allowScriptHashesInCsp(csp, extraHashes);
+      }
     }
-    const headers = { ...proxyRes.headers, "content-length": String(body.byteLength) };
+    headers["content-length"] = String(body.byteLength);
     delete headers["content-encoding"]; // forced to `identity` below, so none to declare here
     res.writeHead(proxyRes.statusCode ?? 200, headers);
     res.end(body);
