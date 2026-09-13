@@ -702,14 +702,19 @@
       }
       .knox-log-line--active {
         color: var(--text-0);
+      }
+      .knox-shimmer-text {
         background: linear-gradient(
           100deg,
-          transparent 30%,
-          color-mix(in srgb, var(--accent) 16%, transparent) 50%,
-          transparent 70%
+          var(--text-3) 35%,
+          var(--text-0) 50%,
+          var(--text-3) 65%
         );
         background-size: 220% 100%;
-        animation: knox-line-in 0.25s ease forwards, knox-shimmer 1.6s linear infinite;
+        background-clip: text;
+        -webkit-background-clip: text;
+        color: transparent;
+        animation: knox-shimmer 1.6s linear infinite;
       }
       @keyframes knox-shimmer {
         from { background-position: 140% 0; }
@@ -747,9 +752,15 @@
       @media (prefers-reduced-motion: reduce) {
         .knox-launch-dot,
         .knox-log-line,
-        .knox-log-line--active,
+        .knox-shimmer-text,
         .knox-log-icon--spin {
           animation: none;
+        }
+        .knox-shimmer-text {
+          background: none;
+          -webkit-background-clip: initial;
+          background-clip: initial;
+          color: inherit;
         }
       }
 
@@ -1155,7 +1166,8 @@
               var isActive = i === stepIndex;
               var cls = "knox-log-line" + (isActive ? " knox-log-line--active" : " knox-log-line--done");
               var icon = isActive ? ICON_SPIN : ICON_DONE;
-              return '<div class="' + cls + '">' + icon + "<span>" + step.label + "…</span></div>";
+              var textCls = isActive ? " class=\"knox-shimmer-text\"" : "";
+              return '<div class="' + cls + '">' + icon + "<span" + textCls + ">" + step.label + "…</span></div>";
             })
             .join("");
         }
