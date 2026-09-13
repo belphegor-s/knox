@@ -285,6 +285,11 @@
       .btn-ghost:hover {
         border-color: var(--border-strong);
       }
+      .btn.is-loading {
+        opacity: 0.6;
+        cursor: default;
+        pointer-events: none;
+      }
 
       /* ---------- hero ---------- */
       .hero {
@@ -725,25 +730,25 @@
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>
           <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
         </button>
-        <a class="btn btn-primary" href="/app/">Open Knox</a>
+        <a class="btn btn-primary" href="/app/" data-knox-open>Open Knox</a>
       </div>
     </nav>
 
     <main id="top">
       <section class="hero">
-        <span class="eyebrow">local-first &middot; browser-native</span>
-        <h1>A real IDE that lives<br />entirely in <span>your browser</span>.</h1>
-        <p class="hero-sub">Real files. Real Git. Real terminal. Nothing installed, nothing signed up for.</p>
+        <span class="eyebrow">real VS Code &middot; self-hostable</span>
+        <h1>Real VS Code,<br />open in <span>one click</span>.</h1>
+        <p class="hero-sub">A full coding session in your browser. No install, no signup, gone when you close the tab.</p>
         <div class="hero-ctas">
-          <a class="btn btn-primary btn-lg" href="/app/">Open Knox</a>
+          <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
           <a class="btn btn-ghost btn-lg" href="#features">See what's real</a>
         </div>
-        <p class="hero-meta">no signup / works offline / MIT licensed</p>
+        <p class="hero-meta">no signup / 15-minute sessions / self-hostable, unrestricted</p>
         <div class="shot fade">
           <div class="mock-window" role="img" aria-label="Knox with an open TypeScript project: a file tree, tabbed editor, and syntax-highlighted code">
             <div class="mock-titlebar">
               <span>Knox<span class="mock-crumb-sep">/</span>task-api</span>
-              <span class="mock-badge">Local (OPFS)</span>
+              <span class="mock-badge">VS Code, hosted</span>
             </div>
             <div class="mock-body">
               <div class="mock-sidebar">
@@ -868,7 +873,7 @@
         <div class="close fade">
           <h2>Your browser is ready.</h2>
           <p>No installer, no account, no waiting.</p>
-          <a class="btn btn-primary btn-lg" href="/app/">Open Knox</a>
+          <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
         </div>
       </section>
     </main>
@@ -926,6 +931,101 @@
             el.classList.add("in");
           });
         }
+
+        // ---- "Open Knox" -> the public demo's session broker -------------------------
+        // A self-hosted build has no session broker at all (see infra/Dockerfile's empty
+        // KNOX_SESSION_API_UPSTREAM default) - /api/sessions 502s there, and this just falls
+        // back to the plain href (the old in-browser shell at /app/) rather than erroring.
+        function fnv1aHash(str) {
+          var hash = 0x811c9dc5;
+          for (var i = 0; i < str.length; i++) {
+            hash ^= str.charCodeAt(i);
+            hash = (hash * 0x01000193) >>> 0;
+          }
+          return hash.toString(36);
+        }
+
+        // Not trying to be forensically unique - just enough entropy to keep the daily cap
+        // roughly per-device without needing an account. Combined server-side with client IP.
+        function knoxFingerprint() {
+          try {
+            var canvas = document.createElement("canvas");
+            var ctx = canvas.getContext("2d");
+            ctx.textBaseline = "top";
+            ctx.font = "14px Arial";
+            ctx.fillText("knox", 2, 2);
+            var signal = [
+              navigator.userAgent,
+              navigator.language,
+              String(navigator.hardwareConcurrency || ""),
+              screen.width + "x" + screen.height + "x" + screen.colorDepth,
+              Intl.DateTimeFormat().resolvedOptions().timeZone,
+              canvas.toDataURL(),
+            ].join("||");
+            return "fp_" + fnv1aHash(signal);
+          } catch (e) {
+            return "fp_" + Math.random().toString(36).slice(2);
+          }
+        }
+
+        var knoxLinks = document.querySelectorAll("[data-knox-open]");
+        var knoxOriginalLabels = Array.prototype.map.call(knoxLinks, function (l) {
+          return l.textContent;
+        });
+
+        function setKnoxLinksLoading(loading, labelWhileLoading) {
+          knoxLinks.forEach(function (l, i) {
+            l.textContent = loading ? labelWhileLoading : knoxOriginalLabels[i];
+            l.classList.toggle("is-loading", loading);
+          });
+        }
+
+        knoxLinks.forEach(function (link) {
+          link.addEventListener("click", function (evt) {
+            if (link.classList.contains("is-loading")) {
+              evt.preventDefault();
+              return;
+            }
+            evt.preventDefault();
+            setKnoxLinksLoading(true, "Starting session…");
+
+            fetch("/api/sessions", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ fingerprintId: knoxFingerprint() }),
+            })
+              .then(function (res) {
+                return res.text().then(function (text) {
+                  var body = null;
+                  try {
+                    body = JSON.parse(text);
+                  } catch (e) {
+                    /* non-JSON (e.g. nginx's own 502 page) - handled below via status alone */
+                  }
+                  return { ok: res.ok, status: res.status, body: body };
+                });
+              })
+              .then(function (result) {
+                if (result.ok && result.body && result.body.url) {
+                  setKnoxLinksLoading(true, "Opening…");
+                  window.location.href = result.body.url;
+                  return;
+                }
+                setKnoxLinksLoading(false);
+                if (result.body && result.body.error) {
+                  window.alert(result.body.error);
+                } else if (result.status === 502 || result.status === 404 || !result.body) {
+                  window.alert("The hosted demo isn't running right now. See the README to self-host Knox instead - no restrictions, no waiting.");
+                } else {
+                  window.alert("Could not start a session. Try again in a moment.");
+                }
+              })
+              .catch(function () {
+                setKnoxLinksLoading(false);
+                window.alert("Could not reach Knox - check your connection and try again.");
+              });
+          });
+        });
       })();
     </script>
   </body>

@@ -46,6 +46,12 @@ COPY --from=build /repo/apps/web/dist /usr/share/nginx/html
 # touches them as long as nothing uppercase happens to collide.
 COPY infra/nginx.conf /etc/nginx/templates/default.conf.template
 ENV KNOX_API_UPSTREAM=http://api:8081
+# Empty by default on purpose: a self-hosted instance has no session broker deployed at all
+# (self-hosting already means unrestricted, direct access to the `vscode` service - see
+# infra/docker-compose.yml), so "Open Knox" on the bundled landing page should never try to
+# reach anyone else's session broker. Only knox.procd.cc's own Coolify deployment overrides
+# this, to its own session-broker app's public URL.
+ENV KNOX_SESSION_API_UPSTREAM=
 
 # Coolify/most PaaS route by container port; 8080 avoids requiring root for port 80.
 EXPOSE 8080
