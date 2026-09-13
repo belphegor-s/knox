@@ -1,0 +1,29 @@
+{
+  "family": "knox-vscode",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/knox-ecs-execution-role",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/knox-ecs-task-role",
+  "containerDefinitions": [
+    {
+      "name": "knox-vscode",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/knox-vscode:latest",
+      "essential": true,
+      "portMappings": [{ "containerPort": 8080, "protocol": "tcp" }],
+      "linuxParameters": {
+        "capabilities": { "drop": ["ALL"] }
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/knox/vscode-sessions",
+          "awslogs-region": "REGION",
+          "awslogs-stream-prefix": "knox-vscode",
+          "awslogs-create-group": "true"
+        }
+      }
+    }
+  ]
+}

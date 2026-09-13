@@ -32,9 +32,45 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://knox:${POSTGRES_PASSWORD}@postgres:5432/knox
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      KNOX_ECS_CLUSTER: ${KNOX_ECS_CLUSTER:-knox-execution}
+      KNOX_VSCODE_TASK_DEFINITION: ${KNOX_VSCODE_TASK_DEFINITION:-knox-vscode}
+      KNOX_VSCODE_CONTAINER_NAME: ${KNOX_VSCODE_CONTAINER_NAME:-knox-vscode}
+      KNOX_ECS_SUBNETS: ${KNOX_ECS_SUBNETS}
+      KNOX_VSCODE_SECURITY_GROUPS: ${KNOX_VSCODE_SECURITY_GROUPS}
+      KNOX_SESSION_DOMAIN: ${KNOX_SESSION_DOMAIN:-procd.cc}
     ports:
       - "8083:8083"
     restart: unless-stopped
+    # Coolify's own managed domain (sessions.procd.cc, set via its docker_compose_domains API
+    # field, not in this file) exists ONLY to make Coolify attach this container to its shared
+    # Traefik network and give it a real Let's Encrypt cert for a fixed health-check URL - it
+    # provisions ONE static FQDN, but every session mints its own random subdomain
+    # (<sessionId>.procd.cc) that can't be pre-registered that way. The actual session routing
+    # is this hand-written wildcard router instead. See docs/cloud-runtime.md for why the
+    # *.procd.cc DNS record is proxied through Cloudflare (free Universal SSL covers exactly one
+    # level under the registered zone) rather than each session getting its own real certificate,
+    # which would burn through Let's Encrypt's per-registered-domain rate limit shared with every
+    # other app on procd.cc within a few dozen sessions.
+    labels:
+      - traefik.enable=true
+      # Coolify's docker_compose_domains config puts this container on more than one Docker
+      # network (its own compose network plus the shared Traefik one) - without pinning the
+      # network explicitly, Traefik can't tell which one to route this custom service through
+      # and silently serves "no available server" for it (Coolify's own auto-generated router
+      # doesn't have this problem because Coolify tags its own labels with the network itself).
+      - traefik.docker.network=coolify
+      - traefik.http.routers.knox-sessions.rule=HostRegexp(`^.+\.procd\.cc$`)
+      - traefik.http.routers.knox-sessions.entrypoints=https
+      - traefik.http.routers.knox-sessions.tls=true
+      # Traefik's default priority is the rule string's length, and this regex rule is a long
+      # string - without pinning it low, it could outrank other apps' plain Host(`x.procd.cc`)
+      # routers and steal their traffic. Every other app's exact-match router must always win;
+      # this only catches requests nothing else claims.
+      - traefik.http.routers.knox-sessions.priority=1
+      - traefik.http.services.knox-sessions.loadbalancer.server.port=8083
 
 volumes:
   knox-sessions-postgres-data:
