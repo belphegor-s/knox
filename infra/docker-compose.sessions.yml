@@ -65,6 +65,11 @@ services:
       - traefik.http.routers.knox-sessions.rule=HostRegexp(`^.+\.procd\.cc$`)
       - traefik.http.routers.knox-sessions.entrypoints=https
       - traefik.http.routers.knox-sessions.tls=true
+      # Coolify's own auto-generated http-0-.../https-0-... services live on this same
+      # container (for the sessions.procd.cc domain above), so Traefik can't infer which
+      # service this router means from same-name matching alone - it needs to be explicit
+      # ("Router knox-sessions cannot be linked automatically with multiple Services").
+      - traefik.http.routers.knox-sessions.service=knox-sessions
       # Traefik's default priority is the rule string's length, and this regex rule is a long
       # string - without pinning it low, it could outrank other apps' plain Host(`x.procd.cc`)
       # routers and steal their traffic. Every other app's exact-match router must always win;
