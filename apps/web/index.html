@@ -285,12 +285,6 @@
       .btn-ghost:hover {
         border-color: var(--border-strong);
       }
-      .btn.is-loading {
-        opacity: 0.6;
-        cursor: default;
-        pointer-events: none;
-      }
-
       /* ---------- hero ---------- */
       .hero {
         position: relative;
@@ -622,6 +616,143 @@
         vertical-align: -2px;
       }
 
+      /* ---------- session launch overlay ---------- */
+      .knox-launch {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: color-mix(in srgb, var(--bg-0) 78%, transparent);
+        backdrop-filter: blur(6px);
+      }
+      .knox-launch[hidden] {
+        display: none;
+      }
+      .knox-launch-card {
+        width: 100%;
+        max-width: 420px;
+        background: var(--bg-1);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+        padding: 22px 22px 20px;
+        box-shadow: 0 30px 70px -24px rgba(0, 0, 0, 0.45);
+      }
+      .knox-launch-head {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-0);
+        margin-bottom: 16px;
+      }
+      .knox-launch-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+        animation: knox-pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes knox-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.72); }
+      }
+      .knox-launch-log {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+      }
+      .knox-log-line {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        color: var(--text-3);
+        opacity: 0;
+        transform: translateY(3px);
+        animation: knox-line-in 0.25s ease forwards;
+      }
+      @keyframes knox-line-in {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .knox-log-icon {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .knox-log-icon svg {
+        width: 100%;
+        height: 100%;
+      }
+      .knox-log-line--done {
+        color: var(--text-1);
+      }
+      .knox-log-line--done .knox-log-icon {
+        color: var(--success);
+      }
+      .knox-log-line--active {
+        color: var(--text-0);
+        background: linear-gradient(
+          100deg,
+          transparent 30%,
+          color-mix(in srgb, var(--accent) 16%, transparent) 50%,
+          transparent 70%
+        );
+        background-size: 220% 100%;
+        animation: knox-line-in 0.25s ease forwards, knox-shimmer 1.6s linear infinite;
+      }
+      @keyframes knox-shimmer {
+        from { background-position: 140% 0; }
+        to { background-position: -60% 0; }
+      }
+      .knox-log-icon--spin {
+        border: 1.5px solid var(--border-strong);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: knox-spin 0.7s linear infinite;
+      }
+      @keyframes knox-spin {
+        to { transform: rotate(360deg); }
+      }
+      .knox-launch-hint {
+        margin: 14px 2px 0;
+        font-size: 12px;
+        color: var(--text-3);
+      }
+      .knox-launch-error {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+      }
+      .knox-launch-error p {
+        margin: 0 0 12px;
+        font-size: 13.5px;
+        color: var(--text-1);
+        line-height: 1.5;
+      }
+      .knox-launch-error-actions {
+        display: flex;
+        gap: 8px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .knox-launch-dot,
+        .knox-log-line,
+        .knox-log-line--active,
+        .knox-log-icon--spin {
+          animation: none;
+        }
+      }
+
       /* ---------- steps ---------- */
       .steps {
         width: calc(100% - 48px);
@@ -715,6 +846,24 @@
     </style>
   </head>
   <body>
+    <div class="knox-launch" id="knox-launch" hidden aria-live="polite">
+      <div class="knox-launch-card">
+        <div class="knox-launch-head">
+          <span class="knox-launch-dot"></span>
+          <span id="knox-launch-title">Starting your session</span>
+        </div>
+        <div class="knox-launch-log" id="knox-launch-log"></div>
+        <p class="knox-launch-hint" id="knox-launch-hint">First load can take up to a minute while your sandbox boots.</p>
+        <div class="knox-launch-error" id="knox-launch-error" hidden>
+          <p id="knox-launch-error-text"></p>
+          <div class="knox-launch-error-actions">
+            <button class="btn btn-primary" id="knox-launch-retry" type="button">Try again</button>
+            <button class="btn btn-ghost" id="knox-launch-dismiss" type="button">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <nav>
       <a class="brand" href="#top">
         <svg viewBox="0 0 32 32" aria-hidden="true">
@@ -969,62 +1118,147 @@
         }
 
         var knoxLinks = document.querySelectorAll("[data-knox-open]");
-        var knoxOriginalLabels = Array.prototype.map.call(knoxLinks, function (l) {
-          return l.textContent;
-        });
 
-        function setKnoxLinksLoading(loading, labelWhileLoading) {
-          knoxLinks.forEach(function (l, i) {
-            l.textContent = loading ? labelWhileLoading : knoxOriginalLabels[i];
-            l.classList.toggle("is-loading", loading);
-          });
+        // ---- launch overlay: a simulated step timeline against a single blocking POST ----
+        // /api/sessions doesn't stream real progress (RunTask -> wait for a public IP is one
+        // request), so these steps advance on a timer tied to how long each part of a cold
+        // start actually takes in practice, not on real server events. The last step just
+        // waits - it holds until the response actually arrives, however long that takes,
+        // rather than claiming to be done before it is.
+        var KNOX_STEPS = [
+          { label: "Checking today's usage", ms: 500 },
+          { label: "Reserving an isolated sandbox", ms: 3000 },
+          { label: "Pulling the VS Code image", ms: 20000 },
+          { label: "Booting your editor", ms: 12000 },
+          { label: "Waiting for it to come online", ms: null },
+        ];
+
+        var overlay = document.getElementById("knox-launch");
+        var titleEl = document.getElementById("knox-launch-title");
+        var logEl = document.getElementById("knox-launch-log");
+        var hintEl = document.getElementById("knox-launch-hint");
+        var errorBox = document.getElementById("knox-launch-error");
+        var errorText = document.getElementById("knox-launch-error-text");
+        var retryBtn = document.getElementById("knox-launch-retry");
+        var dismissBtn = document.getElementById("knox-launch-dismiss");
+        var stepTimer = null;
+        var stepIndex = -1;
+
+        var ICON_SPIN = '<span class="knox-log-icon knox-log-icon--spin"></span>';
+        var ICON_DONE =
+          '<span class="knox-log-icon"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 7-7"/></svg></span>';
+        var ICON_PENDING = '<span class="knox-log-icon"></span>';
+
+        function renderSteps() {
+          logEl.innerHTML = KNOX_STEPS.slice(0, stepIndex + 1)
+            .map(function (step, i) {
+              var isActive = i === stepIndex;
+              var cls = "knox-log-line" + (isActive ? " knox-log-line--active" : " knox-log-line--done");
+              var icon = isActive ? ICON_SPIN : ICON_DONE;
+              return '<div class="' + cls + '">' + icon + "<span>" + step.label + "…</span></div>";
+            })
+            .join("");
+        }
+
+        function advanceStep() {
+          stepIndex += 1;
+          if (stepIndex >= KNOX_STEPS.length) return;
+          renderSteps();
+          var step = KNOX_STEPS[stepIndex];
+          if (step.ms != null) {
+            stepTimer = setTimeout(advanceStep, step.ms);
+          }
+        }
+
+        function openOverlay() {
+          errorBox.hidden = true;
+          hintEl.hidden = false;
+          titleEl.textContent = "Starting your session";
+          stepIndex = -1;
+          advanceStep();
+          overlay.hidden = false;
+        }
+
+        function closeOverlay() {
+          overlay.hidden = true;
+          if (stepTimer) clearTimeout(stepTimer);
+          stepTimer = null;
+        }
+
+        function showOverlayError(message) {
+          if (stepTimer) clearTimeout(stepTimer);
+          stepTimer = null;
+          hintEl.hidden = true;
+          errorText.textContent = message;
+          errorBox.hidden = false;
+        }
+
+        function finishOverlaySuccess(url) {
+          if (stepTimer) clearTimeout(stepTimer);
+          stepTimer = null;
+          stepIndex = KNOX_STEPS.length - 1;
+          renderSteps();
+          logEl.lastElementChild.className = "knox-log-line knox-log-line--done";
+          logEl.lastElementChild.innerHTML = ICON_DONE + "<span>Session ready</span>";
+          titleEl.textContent = "Opening your session…";
+          window.location.href = url;
+        }
+
+        var pendingRequestId = 0;
+
+        function startKnoxSession() {
+          var requestId = ++pendingRequestId;
+          openOverlay();
+
+          fetch("/api/sessions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fingerprintId: knoxFingerprint() }),
+          })
+            .then(function (res) {
+              return res.text().then(function (text) {
+                var body = null;
+                try {
+                  body = JSON.parse(text);
+                } catch (e) {
+                  /* non-JSON (e.g. nginx's own 502 page) - handled below via status alone */
+                }
+                return { ok: res.ok, status: res.status, body: body };
+              });
+            })
+            .then(function (result) {
+              if (requestId !== pendingRequestId) return; // superseded by a retry
+              if (result.ok && result.body && result.body.url) {
+                finishOverlaySuccess(result.body.url);
+                return;
+              }
+              if (result.body && result.body.error) {
+                showOverlayError(result.body.error);
+              } else if (result.status === 502 || result.status === 404 || !result.body) {
+                showOverlayError("The hosted demo isn't running right now. See the README to self-host Knox instead - no restrictions, no waiting.");
+              } else {
+                showOverlayError("Could not start a session. Try again in a moment.");
+              }
+            })
+            .catch(function () {
+              if (requestId !== pendingRequestId) return;
+              showOverlayError("Could not reach Knox - check your connection and try again.");
+            });
         }
 
         knoxLinks.forEach(function (link) {
           link.addEventListener("click", function (evt) {
-            if (link.classList.contains("is-loading")) {
-              evt.preventDefault();
-              return;
-            }
             evt.preventDefault();
-            setKnoxLinksLoading(true, "Starting session…");
-
-            fetch("/api/sessions", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ fingerprintId: knoxFingerprint() }),
-            })
-              .then(function (res) {
-                return res.text().then(function (text) {
-                  var body = null;
-                  try {
-                    body = JSON.parse(text);
-                  } catch (e) {
-                    /* non-JSON (e.g. nginx's own 502 page) - handled below via status alone */
-                  }
-                  return { ok: res.ok, status: res.status, body: body };
-                });
-              })
-              .then(function (result) {
-                if (result.ok && result.body && result.body.url) {
-                  setKnoxLinksLoading(true, "Opening…");
-                  window.location.href = result.body.url;
-                  return;
-                }
-                setKnoxLinksLoading(false);
-                if (result.body && result.body.error) {
-                  window.alert(result.body.error);
-                } else if (result.status === 502 || result.status === 404 || !result.body) {
-                  window.alert("The hosted demo isn't running right now. See the README to self-host Knox instead - no restrictions, no waiting.");
-                } else {
-                  window.alert("Could not start a session. Try again in a moment.");
-                }
-              })
-              .catch(function () {
-                setKnoxLinksLoading(false);
-                window.alert("Could not reach Knox - check your connection and try again.");
-              });
+            startKnoxSession();
           });
+        });
+
+        retryBtn.addEventListener("click", function () {
+          startKnoxSession();
+        });
+        dismissBtn.addEventListener("click", function () {
+          pendingRequestId += 1; // ignore whatever the in-flight request resolves to
+          closeOverlay();
         });
       })();
     </script>
