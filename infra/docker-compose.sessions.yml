@@ -1,0 +1,40 @@
+# Standalone compose file for the public demo's session broker, deployed as its own Coolify
+# application (mirrors infra/docker-compose.cloud-execution.yml's reasoning for knox-api being
+# separate from knox-web). Not part of the self-hosted docker-compose.yml - self-hosting a
+# single unrestricted `vscode` container needs no database, no orchestrator, and no usage caps
+# at all, so bundling this in there would force unrelated infrastructure on every self-hoster.
+#
+# Build contexts are repo-root-relative (`.`), matching docker-compose.cloud-execution.yml's own
+# fix for this - Coolify's docker-compose deploy always passes --project-directory as the repo
+# root regardless of where this file itself sits.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: knox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set a password}
+      POSTGRES_DB: knox
+    volumes:
+      - knox-sessions-postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U knox"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  session-broker:
+    build:
+      context: .
+      dockerfile: apps/session-broker/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://knox:${POSTGRES_PASSWORD}@postgres:5432/knox
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+
+volumes:
+  knox-sessions-postgres-data:

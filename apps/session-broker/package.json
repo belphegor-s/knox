@@ -1,0 +1,30 @@
+{
+  "name": "@knox/session-broker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ec2": "3.1131.0",
+    "@aws-sdk/client-ecs": "3.1131.0",
+    "express": "5.2.1",
+    "http-proxy": "1.18.1",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/http-proxy": "1.17.17",
+    "@types/node": "20.19.43",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3",
+    "vitest": "2.1.9"
+  }
+}
