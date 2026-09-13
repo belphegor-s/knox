@@ -73,7 +73,7 @@ async function waitForPublicIp(taskArn: string): Promise<string> {
   }
 }
 
-export async function createSession(ip: string, fingerprintId: string): Promise<SessionRecord> {
+export async function createSession(ip: string, fingerprintId: string, userId: string): Promise<SessionRecord> {
   if (!CLUSTER || !TASK_DEFINITION || SUBNETS.length === 0) {
     throw new Error("Session broker is misconfigured: KNOX_ECS_CLUSTER, KNOX_VSCODE_TASK_DEFINITION, and KNOX_ECS_SUBNETS are all required.");
   }
@@ -120,8 +120,8 @@ export async function createSession(ip: string, fingerprintId: string): Promise<
   const expiresAt = new Date(Date.now() + Math.min(SESSION_DURATION_MS, remainingTodayMs));
 
   await pool.query(
-    `INSERT INTO sessions (id, ip, fingerprint_id, task_arn, public_ip, expires_at) VALUES ($1, $2, $3, $4, $5, $6)`,
-    [id, ip, fingerprintId, taskArn, publicIp, expiresAt],
+    `INSERT INTO sessions (id, ip, fingerprint_id, user_id, task_arn, public_ip, expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+    [id, ip, fingerprintId, userId, taskArn, publicIp, expiresAt],
   );
 
   return { id, publicIp, expiresAt };

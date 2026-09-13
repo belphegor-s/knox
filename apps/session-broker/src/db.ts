@@ -19,6 +19,11 @@ const SCHEMA = `
   -- Dropped in favor of network-level access control (see sessions.ts's createSession) -
   -- ALTER rather than a fresh CREATE TABLE so already-deployed databases pick it up too.
   ALTER TABLE sessions DROP COLUMN IF EXISTS password;
+  -- Recorded once sign-in became required (apps/session-broker/src/account-auth.ts) - kept
+  -- alongside, not instead of, the existing (ip, fingerprint_id) cap: an account is the real
+  -- gate now, but the fingerprint/IP check stays as a second layer against one account being
+  -- used to spin up sessions from many different browsers at once.
+  ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_id TEXT;
 `;
 
 export async function initSchema(): Promise<void> {

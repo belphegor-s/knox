@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#0b0c0e" />
     <meta
       name="description"
-      content="Knox runs real VS Code in your browser: a live sandbox, no install and no signup, open in one click. Self-host it for unrestricted, unlimited use."
+      content="Knox runs real VS Code in your browser: a live sandbox, no install and no password, open in one click. Self-host it for unrestricted, unlimited use."
     />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
@@ -19,7 +19,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Knox" />
     <meta property="og:title" content="Knox" />
-    <meta property="og:description" content="Real VS Code, open in one click. No install, no signup. Self-hostable for unrestricted use." />
+    <meta property="og:description" content="Real VS Code, open in one click. No install, no password. Self-hostable for unrestricted use." />
     <meta property="og:image" content="/og-image.png?v=2" />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -891,6 +891,17 @@
             <button class="btn btn-ghost" id="knox-launch-dismiss" type="button">Dismiss</button>
           </div>
         </div>
+        <div class="knox-launch-error" id="knox-signin" hidden>
+          <p>Sign in to start a session - no password, just a link emailed to you.</p>
+          <form id="knox-signin-form" style="display:flex; gap:8px;">
+            <input type="email" id="knox-signin-email" required placeholder="you@example.com" style="flex:1; padding:9px 12px; border-radius:var(--radius); border:1px solid var(--border-strong); background:var(--bg-0); color:var(--text-0); font-size:14px; font-family:inherit;" />
+            <button class="btn btn-primary" type="submit">Send link</button>
+          </form>
+          <p id="knox-signin-sent" hidden style="color:var(--success); margin:12px 0 0;">Check your email for a sign-in link, then come back and click Open Knox again.</p>
+          <div class="knox-launch-error-actions" style="margin-top:14px;">
+            <button class="btn btn-ghost" id="knox-signin-dismiss" type="button">Dismiss</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -917,12 +928,12 @@
       <section class="hero">
         <span class="eyebrow">real VS Code &middot; self-hostable</span>
         <h1>Real VS Code,<br />open in <span>one click</span>.</h1>
-        <p class="hero-sub">A full coding session in your browser. No install, no signup, gone when you close the tab.</p>
+        <p class="hero-sub">A full coding session in your browser. No install, no password, gone when you close the tab.</p>
         <div class="hero-ctas">
           <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
           <a class="btn btn-ghost btn-lg" href="#features">See what's real</a>
         </div>
-        <p class="hero-meta">no signup / 15-minute sessions / self-hostable, unrestricted</p>
+        <p class="hero-meta">sign in with a magic link / 15-minute sessions / self-hostable, unrestricted</p>
         <div class="lang-chips" aria-label="Languages pre-installed in the hosted demo">
           <span class="lang-chip">Java</span>
           <span class="lang-chip">Python</span>
@@ -1034,18 +1045,18 @@
         <div class="steps fade">
           <div class="step">
             <span>01</span>
-            <h4>Click Open Knox</h4>
-            <p>A real container boots with VS Code already running inside it. No account, no install.</p>
+            <h4>Sign in with a magic link</h4>
+            <p>An email with a one-click link - no password to set or remember, and no separate account for the API product.</p>
           </div>
           <div class="step">
             <span>02</span>
             <h4>Code, run, commit</h4>
-            <p>The full IDE - editor, terminal, Git, extensions - running server-side, not emulated in your tab.</p>
+            <p>A real container boots with VS Code already running - editor, terminal, Git, extensions, all server-side.</p>
           </div>
           <div class="step">
             <span>03</span>
             <h4>15 minutes, then it's gone</h4>
-            <p>The public demo tears the container down automatically. That's the trade-off for not needing an account.</p>
+            <p>The public demo tears the container down automatically. That's the trade-off for keeping it free.</p>
           </div>
           <div class="step">
             <span>04</span>
@@ -1058,7 +1069,7 @@
       <section class="section">
         <div class="close fade">
           <h2>Real VS Code is one click away.</h2>
-          <p>No installer, no account required.</p>
+          <p>No installer, no password to remember.</p>
           <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
         </div>
       </section>
@@ -1178,8 +1189,18 @@
         var errorText = document.getElementById("knox-launch-error-text");
         var retryBtn = document.getElementById("knox-launch-retry");
         var dismissBtn = document.getElementById("knox-launch-dismiss");
+        var signinBox = document.getElementById("knox-signin");
+        var signinForm = document.getElementById("knox-signin-form");
+        var signinEmail = document.getElementById("knox-signin-email");
+        var signinSent = document.getElementById("knox-signin-sent");
+        var signinDismiss = document.getElementById("knox-signin-dismiss");
         var stepTimer = null;
         var stepIndex = -1;
+
+        // The account/API-key product lives on its own subdomain (knox-api.procd.cc) - a
+        // sign-in there sets a cookie shared across all of procd.cc, so this cross-origin call
+        // is the ONE place this page talks to it directly.
+        var ACCOUNT_API_ORIGIN = "https://knox-api.procd.cc";
 
         var ICON_SPIN = '<span class="knox-log-icon knox-log-icon--spin"></span>';
         var ICON_DONE =
@@ -1225,6 +1246,7 @@
 
         function openOverlay() {
           errorBox.hidden = true;
+          signinBox.hidden = true;
           hintEl.hidden = false;
           titleEl.textContent = "Starting your session";
           stepIndex = -1;
@@ -1245,6 +1267,17 @@
           hintEl.hidden = true;
           errorText.textContent = message;
           errorBox.hidden = false;
+        }
+
+        function showSignInPrompt() {
+          if (stepTimer) clearTimeout(stepTimer);
+          stepTimer = null;
+          freezeActiveLine();
+          hintEl.hidden = true;
+          titleEl.textContent = "Sign in required";
+          signinSent.hidden = true;
+          signinForm.hidden = false;
+          signinBox.hidden = false;
         }
 
         function finishOverlaySuccess(url) {
@@ -1286,7 +1319,9 @@
                 finishOverlaySuccess(result.body.url);
                 return;
               }
-              if (result.body && result.body.error) {
+              if (result.status === 401 && result.body && result.body.signInRequired) {
+                showSignInPrompt();
+              } else if (result.body && result.body.error) {
                 showOverlayError(result.body.error);
               } else if (result.status === 502 || result.status === 404 || !result.body) {
                 showOverlayError("The hosted demo isn't running right now. See the README to self-host Knox instead - no restrictions, no waiting.");
@@ -1313,6 +1348,42 @@
         dismissBtn.addEventListener("click", function () {
           pendingRequestId += 1; // ignore whatever the in-flight request resolves to
           closeOverlay();
+        });
+        signinDismiss.addEventListener("click", function () {
+          pendingRequestId += 1;
+          closeOverlay();
+        });
+        signinForm.addEventListener("submit", function (evt) {
+          evt.preventDefault();
+          var email = signinEmail.value;
+          var submitBtn = signinForm.querySelector("button");
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Sending…";
+          fetch(ACCOUNT_API_ORIGIN + "/auth/request-link", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, redirect: window.location.origin + "/" }),
+          })
+            .then(function (res) {
+              return res.json().then(function (body) {
+                return { ok: res.ok, body: body };
+              });
+            })
+            .then(function (result) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Send link";
+              if (result.ok) {
+                signinForm.hidden = true;
+                signinSent.hidden = false;
+              } else {
+                window.alert((result.body && result.body.error) || "Could not send the link. Try again.");
+              }
+            })
+            .catch(function () {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "Send link";
+              window.alert("Could not reach the sign-in service. Try again.");
+            });
         });
       })();
     </script>

@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import { initSchema, pool } from "./db.js";
 import { createSession, reapExpiredSessions, SessionLimitError } from "./sessions.js";
 import { proxyHttpRequest, proxyUpgrade } from "./proxy.js";
+import { resolveAccount } from "./account-auth.js";
 
 const app = express();
 app.use(express.json({ limit: "16kb" }));
@@ -11,10 +12,19 @@ app.get("/health", (_req, res) => {
   res.status(200).send("ok");
 });
 
-// The public, no-login "Open Knox" entry point. Identity for the abuse caps below is (real
-// client IP, FingerprintJS visitor id) - see docs/cloud-runtime.md for why this stands in for
-// TLS/JA3 fingerprinting, which needs a Cloudflare plan this project isn't paying for.
+// "Open Knox" now requires signing in - the same magic-link account apps/api issues API keys
+// under (see apps/session-broker/src/account-auth.ts: the two services share a cookie domain,
+// so one sign-in gates both products). Identity for the abuse caps below stays (real client
+// IP, FingerprintJS visitor id) as a second layer on top of the account itself - see
+// docs/cloud-runtime.md for why this stands in for TLS/JA3 fingerprinting, which needs a
+// Cloudflare plan this project isn't paying for.
 app.post("/api/sessions", async (req, res) => {
+  const account = await resolveAccount(req.headers.cookie);
+  if (!account) {
+    res.status(401).json({ error: "Sign in to start a session.", signInRequired: true });
+    return;
+  }
+
   const ip = req.header("cf-connecting-ip") ?? req.ip ?? "unknown";
   const fingerprintId = typeof req.body?.fingerprintId === "string" ? req.body.fingerprintId : null;
   if (!fingerprintId) {
@@ -23,7 +33,7 @@ app.post("/api/sessions", async (req, res) => {
   }
 
   try {
-    const session = await createSession(ip, fingerprintId);
+    const session = await createSession(ip, fingerprintId, account.userId);
     const domain = process.env.KNOX_SESSION_DOMAIN;
     res.status(201).json({
       sessionId: session.id,
