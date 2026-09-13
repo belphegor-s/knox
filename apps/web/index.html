@@ -343,6 +343,7 @@
       }
 
       .shot {
+        width: 100%;
         max-width: 1000px;
         margin: 0 auto;
         border-radius: var(--radius-lg);
@@ -360,6 +361,11 @@
       }
       .shot {
         aspect-ratio: 2.3 / 1;
+        /* aspect-ratio alone ties height purely to width, so the box kept shrinking the
+           whole way down from desktop to the sidebar-hiding breakpoint below, not just past
+           it - min-height caps that shrink at a size the code stays legible, at any width,
+           while still letting the box grow taller on wide viewports via the ratio above. */
+        min-height: 340px;
       }
 
       /* ---------- mock editor (hero) -----------------------------------------------------
@@ -477,15 +483,6 @@
       @media (max-width: 600px) {
         .mock-sidebar {
           display: none;
-        }
-        /* The aspect-ratio below is sized for the desktop layout (sidebar + code side by
-           side); once the sidebar drops out at this width, the same ratio squeezes the
-           mockup's height down with the viewport until the code is barely legible. A fixed
-           height (sized to the actual title bar + tabs + 10 code lines) keeps the content
-           readable at any phone width instead of shrinking with it. */
-        .shot {
-          aspect-ratio: auto;
-          height: 340px;
         }
       }
 
