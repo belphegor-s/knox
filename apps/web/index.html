@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
 
@@ -36,33 +36,33 @@
       :root {
         --accent: #c1602f;
         --accent-fg: #fff6f0;
-        --accent-2: #4f7fd6;
+        --accent-2: #3d5a8a;
         --accent-2-fg: #f2f6ff;
-        --success: #8fb37a;
-        --radius: 8px;
-        --radius-lg: 16px;
-        --radius-xl: 26px;
-        --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-        --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-        --max-w: 1160px;
+        --success: #6f9257;
+        --radius: 5px;
+        --radius-lg: 8px;
+        --serif: "IBM Plex Serif", Georgia, "Iowan Old Style", serif;
+        --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        --max-w: 1100px;
       }
       /* Same neutral scale as the app itself (src/styles/theme.css) - the landing page and
          the product should look like the same thing, not two different color systems. */
       :root,
       :root[data-theme="dark"] {
-        --bg-0: #08090b;
+        --bg-0: #0b0c0e;
         --bg-1: #0e0f11;
         --bg-2: #16181b;
         --bg-3: #1e2023;
         --border: #232529;
         --border-strong: #34373c;
-        --text-0: #f2f3f5;
+        --text-0: #eceef0;
         --text-1: #d8dadd;
         --text-2: #8b9099;
         --text-3: #5c6066;
         /* Exact values from packages/editor/src/theme.ts's knox-dark Monaco theme, not
            picked for the page - the mock editor/terminal below use the real syntax colors
-           so they read as an accurate diagram of the product, not a stand-in illustration. */
+           so they read as an accurate diagram of the product rather than a stand-in. */
         --syn-keyword: #d99a6c;
         --syn-string: #9fb87a;
         --syn-number: #c9a5e0;
@@ -118,7 +118,7 @@
         color: var(--text-1);
         font-family: var(--sans);
         font-size: 16px;
-        line-height: 1.55;
+        line-height: 1.6;
         -webkit-font-smoothing: antialiased;
         overflow-x: hidden;
         position: relative;
@@ -150,36 +150,15 @@
       }
       .js .fade {
         opacity: 0;
-        transform: translateY(16px);
-        transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        transform: translateY(12px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
       }
       .js .fade.in {
         opacity: 1;
         transform: none;
       }
-      .js .fade-left {
-        transform: translate(-22px, 0);
-      }
-      .js .fade-left.in {
-        transform: none;
-      }
-      .js .fade-right {
-        transform: translate(22px, 0);
-      }
-      .js .fade-right.in {
-        transform: none;
-      }
-      .js .fade-scale {
-        transform: scale(0.96);
-      }
-      .js .fade-scale.in {
-        transform: none;
-      }
       @media (prefers-reduced-motion: reduce) {
-        .js .fade,
-        .js .fade-left,
-        .js .fade-right,
-        .js .fade-scale {
+        .js .fade {
           opacity: 1;
           transform: none;
           transition: none;
@@ -193,27 +172,27 @@
         justify-content: space-between;
         max-width: var(--max-w);
         margin: 0 auto;
-        padding: 22px 24px 0;
+        padding: 26px 24px 0;
       }
       .brand {
         display: flex;
         align-items: center;
         gap: 9px;
         text-decoration: none;
-        font-size: 14px;
-        font-weight: 700;
+        font-size: 14.5px;
+        font-weight: 600;
         letter-spacing: -0.01em;
         color: var(--text-0);
       }
       .brand svg {
-        width: 24px;
-        height: 24px;
-        border-radius: 6px;
+        width: 22px;
+        height: 22px;
+        border-radius: 4px;
       }
       .nav-right {
         display: flex;
         align-items: center;
-        gap: 22px;
+        gap: 24px;
       }
       .nav-link {
         font-size: 13.5px;
@@ -233,8 +212,8 @@
         border: 1px solid var(--border);
         background: var(--bg-1);
         color: var(--text-2);
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -263,31 +242,28 @@
         align-items: center;
         gap: 6px;
         font-size: 13.5px;
-        font-weight: 700;
-        padding: 10px 18px;
-        border-radius: 999px;
+        font-weight: 600;
+        font-family: var(--sans);
+        padding: 9px 16px;
+        border-radius: var(--radius);
         text-decoration: none;
         border: 1px solid transparent;
-        transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-      }
-      .btn:active {
-        transform: scale(0.97);
+        transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease;
       }
       .btn-primary {
         background: var(--accent);
         color: var(--accent-fg);
-        box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--accent) 70%, transparent);
       }
       .btn-primary:hover {
-        opacity: 0.9;
+        opacity: 0.88;
       }
       .btn-secondary {
-        background: var(--accent-2);
-        color: var(--accent-2-fg);
-        box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--accent-2) 70%, transparent);
+        background: transparent;
+        border-color: var(--accent-2);
+        color: var(--accent-2);
       }
       .btn-secondary:hover {
-        opacity: 0.9;
+        background: color-mix(in srgb, var(--accent-2) 10%, transparent);
       }
       .btn-ghost {
         background: var(--bg-1);
@@ -298,81 +274,44 @@
         border-color: var(--border-strong);
       }
       .btn-lg {
-        padding: 13px 22px;
-        font-size: 14.5px;
+        padding: 12px 20px;
+        font-size: 14px;
       }
 
       /* ---------- hero ---------- */
       .hero {
-        position: relative;
-        padding: 92px 24px 60px;
+        padding: 96px 24px 60px;
         text-align: center;
-        isolation: isolate;
-        overflow: hidden;
-      }
-      .hero-glow {
-        position: absolute;
-        inset: -20% -10% auto -10%;
-        height: 720px;
-        z-index: -1;
-        background: radial-gradient(46% 60% at 30% 15%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
-          radial-gradient(40% 55% at 76% 10%, color-mix(in srgb, var(--accent-2) 24%, transparent), transparent 70%);
-        filter: blur(10px);
-        pointer-events: none;
       }
       .eyebrow {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
+        display: block;
         font-family: var(--mono);
         font-size: 12.5px;
         color: var(--text-2);
         margin: 0 0 22px;
-        padding: 6px 13px;
-        border: 1px solid var(--border);
-        border-radius: 999px;
-        background: var(--bg-1);
-      }
-      .eyebrow-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--success);
-        flex-shrink: 0;
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
       }
       .hero h1 {
-        font-size: clamp(38px, 6.4vw, 74px);
-        line-height: 1.02;
-        letter-spacing: -0.035em;
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(36px, 5.4vw, 62px);
+        line-height: 1.12;
+        letter-spacing: -0.01em;
         margin: 0 auto 22px;
-        max-width: 800px;
-        font-weight: 800;
-        background: linear-gradient(100deg, var(--text-0) 30%, var(--accent) 55%, var(--accent-2) 85%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-      }
-      @media (prefers-contrast: more) {
-        .hero h1 {
-          background: none;
-          -webkit-background-clip: initial;
-          background-clip: initial;
-          color: var(--text-0);
-        }
+        max-width: 720px;
+        color: var(--text-0);
       }
       .hero-sub {
-        font-size: 18px;
+        font-size: 17px;
         line-height: 1.6;
         color: var(--text-2);
-        max-width: 480px;
+        max-width: 460px;
         margin: 0 auto 34px;
       }
       .hero-ctas {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
+        gap: 10px;
         margin-bottom: 22px;
         flex-wrap: wrap;
       }
@@ -393,8 +332,8 @@
       .lang-chip {
         font-family: var(--mono);
         font-size: 11.5px;
-        padding: 5px 12px;
-        border-radius: 999px;
+        padding: 5px 11px;
+        border-radius: var(--radius);
         border: 1px solid var(--border);
         color: var(--text-2);
         background: var(--bg-1);
@@ -407,19 +346,19 @@
 
       .shot {
         width: 100%;
-        max-width: 1040px;
+        max-width: 1000px;
         margin: 0 auto;
-        border-radius: var(--radius-xl);
+        border-radius: var(--radius-lg);
         border: 1px solid var(--border);
         overflow: hidden;
-        box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+        box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.4);
       }
       :root[data-theme="light"] .shot {
-        box-shadow: 0 30px 70px -28px rgba(20, 17, 10, 0.16);
+        box-shadow: 0 24px 60px -24px rgba(20, 17, 10, 0.14);
       }
       @media (prefers-color-scheme: light) {
         :root:not([data-theme="dark"]) .shot {
-          box-shadow: 0 30px 70px -28px rgba(20, 17, 10, 0.16);
+          box-shadow: 0 24px 60px -24px rgba(20, 17, 10, 0.14);
         }
       }
       .shot {
@@ -479,7 +418,7 @@
       }
       .mock-file {
         padding: 5px 8px;
-        border-radius: 5px;
+        border-radius: var(--radius);
         color: var(--text-2);
         font-size: 12.5px;
         white-space: nowrap;
@@ -527,21 +466,21 @@
          perpetual animation drawing attention to itself. */
       .js .shot .mock-line {
         opacity: 0;
-        transform: translateX(-8px);
+        transform: translateX(-6px);
       }
       .js .shot.in .mock-line {
-        animation: knox-line-reveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        animation: knox-line-reveal 0.4s ease forwards;
       }
       .js .shot.in .mock-line:nth-child(1) { animation-delay: 0.05s; }
-      .js .shot.in .mock-line:nth-child(2) { animation-delay: 0.13s; }
-      .js .shot.in .mock-line:nth-child(3) { animation-delay: 0.19s; }
-      .js .shot.in .mock-line:nth-child(4) { animation-delay: 0.25s; }
-      .js .shot.in .mock-line:nth-child(5) { animation-delay: 0.33s; }
-      .js .shot.in .mock-line:nth-child(6) { animation-delay: 0.39s; }
-      .js .shot.in .mock-line:nth-child(7) { animation-delay: 0.44s; }
-      .js .shot.in .mock-line:nth-child(8) { animation-delay: 0.5s; }
-      .js .shot.in .mock-line:nth-child(9) { animation-delay: 0.57s; }
-      .js .shot.in .mock-line:nth-child(10) { animation-delay: 0.63s; }
+      .js .shot.in .mock-line:nth-child(2) { animation-delay: 0.12s; }
+      .js .shot.in .mock-line:nth-child(3) { animation-delay: 0.18s; }
+      .js .shot.in .mock-line:nth-child(4) { animation-delay: 0.24s; }
+      .js .shot.in .mock-line:nth-child(5) { animation-delay: 0.31s; }
+      .js .shot.in .mock-line:nth-child(6) { animation-delay: 0.37s; }
+      .js .shot.in .mock-line:nth-child(7) { animation-delay: 0.42s; }
+      .js .shot.in .mock-line:nth-child(8) { animation-delay: 0.48s; }
+      .js .shot.in .mock-line:nth-child(9) { animation-delay: 0.55s; }
+      .js .shot.in .mock-line:nth-child(10) { animation-delay: 0.61s; }
       @keyframes knox-line-reveal {
         to { opacity: 1; transform: none; }
       }
@@ -581,28 +520,29 @@
 
       /* ---------- sections ---------- */
       .section {
-        padding: 108px 0;
+        padding: 100px 0;
         border-top: 1px solid var(--border);
       }
       .section-head {
         width: calc(100% - 48px);
-        max-width: 620px;
-        margin: 0 auto 52px;
-        text-align: center;
+        max-width: 600px;
+        margin: 0 auto 48px;
       }
       .section-head h2 {
-        font-size: clamp(28px, 3.6vw, 42px);
-        letter-spacing: -0.025em;
-        margin: 0 0 14px;
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(26px, 3.2vw, 36px);
+        letter-spacing: -0.005em;
+        margin: 0 0 12px;
         color: var(--text-0);
-        font-weight: 800;
-        line-height: 1.1;
+        line-height: 1.2;
       }
       .section-head p {
         color: var(--text-2);
-        font-size: 16px;
+        font-size: 15.5px;
         line-height: 1.6;
         margin: 0;
+        max-width: 480px;
       }
 
       /* ---------- product panel (execution API hero feature) ---------------------------- */
@@ -614,19 +554,6 @@
         grid-template-columns: 1fr;
         gap: 40px;
         align-items: center;
-        border: 1px solid var(--border);
-        border-radius: var(--radius-xl);
-        background: linear-gradient(165deg, var(--bg-1), var(--bg-2));
-        padding: 44px;
-        position: relative;
-        overflow: hidden;
-      }
-      .product-panel::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(60% 80% at 100% 0%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 70%);
-        pointer-events: none;
       }
       @media (min-width: 880px) {
         .product-panel {
@@ -634,73 +561,58 @@
         }
       }
       .product-copy .eyebrow {
-        border-color: color-mix(in srgb, var(--accent-2) 40%, var(--border));
         color: var(--accent-2);
       }
-      .product-copy .eyebrow .eyebrow-dot {
-        background: var(--accent-2);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-2) 22%, transparent);
-      }
-      .product-copy h2 {
-        font-size: clamp(26px, 3.4vw, 38px);
-        line-height: 1.08;
-        letter-spacing: -0.025em;
-        margin: 0 0 16px;
+      .product-copy h3 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(22px, 2.6vw, 30px);
+        line-height: 1.2;
+        letter-spacing: -0.005em;
+        margin: 0 0 14px;
         color: var(--text-0);
-        font-weight: 800;
       }
       .product-copy p {
         color: var(--text-2);
-        font-size: 15.5px;
+        font-size: 15px;
         line-height: 1.65;
-        margin: 0 0 26px;
+        margin: 0 0 24px;
         max-width: 440px;
       }
       .product-facts {
         display: flex;
         flex-wrap: wrap;
-        gap: 22px;
+        gap: 28px;
         margin: 28px 0 0;
-        padding: 20px 0 0;
+        padding: 22px 0 0;
         border-top: 1px solid var(--border);
       }
       .product-fact strong {
         display: block;
-        font-size: 21px;
+        font-family: var(--serif);
+        font-size: 22px;
+        font-weight: 600;
         color: var(--text-0);
-        font-weight: 800;
-        letter-spacing: -0.01em;
       }
       .product-fact span {
         display: block;
         font-size: 12px;
         color: var(--text-3);
-        margin-top: 2px;
+        margin-top: 3px;
       }
       .code-panel {
         border-radius: var(--radius-lg);
         border: 1px solid var(--border);
-        background: var(--bg-0);
+        background: var(--bg-1);
         overflow: hidden;
-        box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.5);
-        position: relative;
-        z-index: 1;
       }
       .code-panel-head {
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 12px 16px;
+        padding: 11px 16px;
         border-bottom: 1px solid var(--border);
       }
-      .code-panel-dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: var(--border-strong);
-      }
       .code-panel-title {
-        margin-left: 8px;
         font-family: var(--mono);
         font-size: 11.5px;
         color: var(--text-3);
@@ -714,73 +626,52 @@
         color: var(--text-1);
         overflow-x: auto;
       }
-      .code-panel .tok-kw { color: var(--syn-keyword); }
       .code-panel .tok-str { color: var(--syn-string); }
-      .code-panel .tok-fn { color: var(--syn-function); }
-      .code-panel .tok-num { color: var(--syn-number); }
       .code-panel .tok-c { color: var(--text-3); }
       .code-panel-response {
         border-top: 1px solid var(--border);
-        padding: 14px 20px;
+        padding: 13px 20px;
         font-family: var(--mono);
         font-size: 12px;
-        color: var(--success);
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        color: var(--text-2);
       }
-      .code-panel-response svg {
-        width: 13px;
-        height: 13px;
-        flex-shrink: 0;
+      .code-panel-response strong {
+        color: var(--success);
       }
 
       /* ---------- scale section ---------------------------------------------------------- */
-      .scale-grid {
+      .scale-list {
         width: calc(100% - 48px);
         max-width: var(--max-w);
         margin: 0 auto;
         display: grid;
         grid-template-columns: 1fr;
-        gap: 1px;
-        background: var(--border);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-xl);
-        overflow: hidden;
+        gap: 32px;
       }
       @media (min-width: 720px) {
-        .scale-grid {
+        .scale-list {
           grid-template-columns: repeat(3, 1fr);
         }
       }
-      .scale-card {
-        background: var(--bg-1);
-        padding: 36px 32px;
-        transition: background 0.2s ease;
+      .scale-item {
+        border-top: 1px solid var(--border-strong);
+        padding-top: 18px;
       }
-      .scale-card:hover {
-        background: var(--bg-2);
-      }
-      .scale-card strong {
-        display: block;
-        font-size: 40px;
-        font-weight: 800;
-        letter-spacing: -0.02em;
+      .scale-item h3 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 18px;
         color: var(--text-0);
-        margin-bottom: 10px;
-        background: linear-gradient(120deg, var(--text-0), var(--accent));
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+        margin: 0 0 8px;
       }
-      .scale-card p {
+      .scale-item p {
         margin: 0;
         font-size: 13.5px;
-        line-height: 1.6;
+        line-height: 1.65;
         color: var(--text-2);
       }
 
-      /* ---------- feature cards (bento) ---------------------------------------------------- */
+      /* ---------- feature cards ---------- */
       .grid {
         width: calc(100% - 48px);
         max-width: var(--max-w);
@@ -790,17 +681,13 @@
         gap: 1px;
         background: var(--border);
         border: 1px solid var(--border);
-        border-radius: var(--radius-xl);
+        border-radius: var(--radius-lg);
         overflow: hidden;
       }
       .card {
         grid-column: span 6;
         background: var(--bg-1);
-        padding: 30px;
-        transition: background 0.2s ease;
-      }
-      .card:hover {
-        background: var(--bg-2);
+        padding: 28px;
       }
       @media (min-width: 720px) {
         .card--half {
@@ -811,25 +698,21 @@
         }
       }
       .card-icon {
-        width: 22px;
-        height: 22px;
+        width: 19px;
+        height: 19px;
         color: var(--accent);
-        margin-bottom: 16px;
-        transition: transform 0.2s ease;
-      }
-      .card:hover .card-icon {
-        transform: scale(1.12) rotate(-4deg);
+        margin-bottom: 14px;
       }
       .card-icon svg {
         width: 100%;
         height: 100%;
       }
       .card h3 {
+        font-family: var(--serif);
         font-size: 16px;
-        font-weight: 700;
+        font-weight: 600;
         color: var(--text-0);
-        margin: 0 0 9px;
-        letter-spacing: -0.01em;
+        margin: 0 0 8px;
       }
       .card p {
         font-size: 13.5px;
@@ -838,7 +721,7 @@
         margin: 0;
       }
       .card-shot {
-        margin: -30px -30px 20px;
+        margin: -28px -28px 18px;
         border-bottom: 1px solid var(--border);
         aspect-ratio: 3 / 1;
         overflow: hidden;
@@ -864,7 +747,7 @@
       }
       .mock-term-tab {
         padding: 3px 9px;
-        border-radius: 5px;
+        border-radius: var(--radius);
         color: var(--text-3);
       }
       .mock-term-tab--active {
@@ -955,7 +838,7 @@
         align-items: center;
         gap: 9px;
         padding: 6px 8px;
-        border-radius: 6px;
+        border-radius: var(--radius);
         color: var(--text-3);
         opacity: 0;
         transform: translateY(3px);
@@ -1052,35 +935,25 @@
         max-width: var(--max-w);
         margin: 0 auto;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-        gap: 1px;
-        background: var(--border);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-xl);
-        overflow: hidden;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 32px;
       }
       .step {
-        background: var(--bg-1);
-        padding: 32px 26px;
-        position: relative;
+        border-left: 2px solid var(--border-strong);
+        padding-left: 18px;
       }
       .step span {
         font-family: var(--mono);
-        font-size: 12px;
+        font-size: 11.5px;
         color: var(--accent);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
-        margin-bottom: 16px;
+        display: block;
+        margin-bottom: 10px;
       }
       .step h4 {
         margin: 0 0 8px;
-        font-size: 15px;
-        font-weight: 700;
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 15.5px;
         color: var(--text-0);
       }
       .step p {
@@ -1096,43 +969,30 @@
         max-width: var(--max-w);
         margin: 0 auto;
         text-align: center;
-        padding: 80px 40px;
-        border-radius: var(--radius-xl);
+        padding: 72px 40px;
+        border-radius: var(--radius-lg);
         border: 1px solid var(--border);
-        background: linear-gradient(165deg, var(--bg-1), var(--bg-2));
-        position: relative;
-        overflow: hidden;
-      }
-      .close::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(50% 90% at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
-        pointer-events: none;
+        background: var(--bg-1);
       }
       .close h2 {
-        font-size: clamp(28px, 4vw, 42px);
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: clamp(24px, 3vw, 32px);
         color: var(--text-0);
         margin: 0 0 14px;
-        letter-spacing: -0.025em;
-        font-weight: 800;
-        position: relative;
+        letter-spacing: -0.005em;
+        line-height: 1.2;
       }
       .close p {
         color: var(--text-2);
-        margin: 0 0 30px;
-        font-size: 15px;
-        position: relative;
-      }
-      .close .hero-ctas {
-        position: relative;
-        margin-bottom: 0;
+        margin: 0 0 28px;
+        font-size: 14.5px;
       }
 
       footer {
         max-width: var(--max-w);
         margin: 0 auto;
-        padding: 56px 24px 60px;
+        padding: 52px 24px 60px;
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -1152,16 +1012,15 @@
       }
       .footer-cols {
         display: flex;
-        gap: 56px;
+        gap: 52px;
         flex-wrap: wrap;
       }
       .footer-col h5 {
-        font-size: 11.5px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
+        font-family: var(--mono);
+        font-size: 11px;
         color: var(--text-3);
         margin: 0 0 12px;
-        font-weight: 600;
+        font-weight: 500;
       }
       .footer-col a {
         display: block;
@@ -1233,9 +1092,8 @@
 
     <main id="top">
       <section class="hero">
-        <div class="hero-glow" aria-hidden="true"></div>
-        <span class="eyebrow"><span class="eyebrow-dot"></span>A live sandbox, not a screenshot</span>
-        <h1>Real VS Code.<br />Running the moment you click.</h1>
+        <span class="eyebrow">A live sandbox, not a screenshot</span>
+        <h1>Real VS&nbsp;Code, running the moment you click.</h1>
         <p class="hero-sub">A full coding session in your browser. No install, no password, gone when you close the tab.</p>
         <div class="hero-ctas">
           <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
@@ -1249,7 +1107,7 @@
           <span class="lang-chip">Bun</span>
           <span class="lang-chip lang-chip--muted">+ any language, self-hosted</span>
         </div>
-        <div class="shot fade fade-scale">
+        <div class="shot fade">
           <div class="mock-window" role="img" aria-label="Knox with an open TypeScript project: a file tree, tabbed editor, and syntax-highlighted code">
             <div class="mock-titlebar">
               <span>Knox<span class="mock-crumb-sep">/</span>task-api</span>
@@ -1352,8 +1210,8 @@
         </div>
         <div class="product-panel fade">
           <div class="product-copy">
-            <span class="eyebrow"><span class="eyebrow-dot"></span>knox-api.procd.cc</span>
-            <h2>Send code. Get output. That's it.</h2>
+            <span class="eyebrow">knox-api.procd.cc</span>
+            <h3>Send code. Get output. That's it.</h3>
             <p>One endpoint, one API key. Python, C, C++, Java, Go, and Rust, each with a real toolchain in a sandboxed container - capped at two minutes per run, every run logged.</p>
             <a class="btn btn-secondary btn-lg" href="https://knox-api.procd.cc/account">Get an API key</a>
             <div class="product-facts">
@@ -1371,9 +1229,8 @@
               </div>
             </div>
           </div>
-          <div class="code-panel fade-right">
+          <div class="code-panel">
             <div class="code-panel-head">
-              <span class="code-panel-dot"></span><span class="code-panel-dot"></span><span class="code-panel-dot"></span>
               <span class="code-panel-title">curl</span>
             </div>
             <pre><span class="tok-c"># python, with numpy/pandas/requests pre-installed</span>
@@ -1381,10 +1238,7 @@ curl https://knox-api.procd.cc/v1/execute \
   -H <span class="tok-str">"Authorization: Bearer knox_live_..."</span> \
   -H <span class="tok-str">"Content-Type: application/json"</span> \
   -d <span class="tok-str">'{"language":"python","filename":"main.py","code":"print(1+1)"}'</span></pre>
-            <div class="code-panel-response">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 7-7"/></svg>
-              {"stdout":"2\n","exitCode":0,"durationMs":840}
-            </div>
+            <div class="code-panel-response"><strong>200</strong> &nbsp;{"stdout":"2\n","exitCode":0,"durationMs":840}</div>
           </div>
         </div>
       </section>
@@ -1394,17 +1248,17 @@ curl https://knox-api.procd.cc/v1/execute \
           <h2>Built to scale past a demo</h2>
           <p>Every session and every execution gets its own isolated compute - no shared kernel, no noisy neighbors, whether it's one user or a whole team.</p>
         </div>
-        <div class="scale-grid fade">
-          <div class="scale-card">
-            <strong>1:1</strong>
-            <p>One Fargate microVM per session or execution - not a shared container pool. Isolation doesn't degrade as usage grows.</p>
+        <div class="scale-list fade">
+          <div class="scale-item">
+            <h3>One task per run</h3>
+            <p>Every session or execution gets its own Fargate microVM, not a shared container pool. Isolation doesn't degrade as usage grows.</p>
           </div>
-          <div class="scale-card">
-            <strong>0</strong>
-            <p>Idle hosts. Nothing runs until a session or execution is actually requested, and it's torn down the moment it ends.</p>
+          <div class="scale-item">
+            <h3>No idle hosts</h3>
+            <p>Nothing runs until a session or execution is actually requested, and it's torn down the moment it ends.</p>
           </div>
-          <div class="scale-card">
-            <strong>&infin;</strong>
+          <div class="scale-item">
+            <h3>No shared ceiling</h3>
             <p>Self-hosted, there's no session cap, no language limit, and no shared infrastructure to plan capacity around at all.</p>
           </div>
         </div>
@@ -1416,22 +1270,22 @@ curl https://knox-api.procd.cc/v1/execute \
         </div>
         <div class="steps fade">
           <div class="step">
-            <span>1</span>
+            <span>01</span>
             <h4>Sign in with a magic link</h4>
             <p>An email with a one-click link - no password to set or remember, and one account for both products.</p>
           </div>
           <div class="step">
-            <span>2</span>
+            <span>02</span>
             <h4>Code, run, commit</h4>
             <p>A real container boots with VS Code already running - editor, terminal, Git, extensions, all server-side.</p>
           </div>
           <div class="step">
-            <span>3</span>
+            <span>03</span>
             <h4>15 minutes, then it's gone</h4>
             <p>The public demo tears the container down automatically. That's the trade-off for keeping it free.</p>
           </div>
           <div class="step">
-            <span>4</span>
+            <span>04</span>
             <h4>Self-host for the real thing</h4>
             <p>Same image, no timer, no language limit. <code>docker compose up</code> and it's yours, unrestricted.</p>
           </div>
@@ -1439,7 +1293,7 @@ curl https://knox-api.procd.cc/v1/execute \
       </section>
 
       <section class="section">
-        <div class="close fade fade-scale">
+        <div class="close fade">
           <h2>Real VS Code is one click away.</h2>
           <p>No installer, no password to remember.</p>
           <div class="hero-ctas">
@@ -1463,7 +1317,7 @@ curl https://knox-api.procd.cc/v1/execute \
       </div>
       <div class="footer-cols">
         <div class="footer-col">
-          <h5>Product</h5>
+          <h5>PRODUCT</h5>
           <a href="/app/" data-knox-open>Open Knox</a>
           <a href="#features">Features</a>
           <a href="#how-it-works">How it works</a>
@@ -1474,7 +1328,7 @@ curl https://knox-api.procd.cc/v1/execute \
           <a href="#api">What it does</a>
         </div>
         <div class="footer-col">
-          <h5>Self-host</h5>
+          <h5>SELF-HOST</h5>
           <a href="https://github.com/belphegor-s/knox">Source on GitHub</a>
           <a href="https://github.com/belphegor-s/knox#readme">Setup guide</a>
         </div>
