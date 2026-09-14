@@ -137,15 +137,43 @@ export async function lookupActiveSession(id: string): Promise<{ publicIp: strin
 
 /** Actually enforces the 15-minute cap - nothing inside the container can be trusted to
  * self-terminate on time, so this has to reach in and stop it from the outside. Call on an
- * interval (see server.ts), not just once. */
+ * interval (see server.ts), not just once.
+ *
+ * Marking a row stopped_at is a promise that the task is actually gone - a StopTask call that
+ * silently fails (this swallowed every error and marked the row stopped regardless, until a
+ * real orphaned task was found running for hours after its row said otherwise) leaves nothing
+ * to ever retry it, since a stopped_at row is never selected again. So a failure here now
+ * checks the task's real status before deciding: already gone (StopTask racing a task that
+ * already exited, or a bad/expired ARN) is fine to mark stopped; anything else is left
+ * unmarked so the next tick, 30s later, tries again. */
 export async function reapExpiredSessions(): Promise<void> {
   const { rows } = await pool.query<{ id: string; task_arn: string }>(
     `SELECT id, task_arn FROM sessions WHERE stopped_at IS NULL AND expires_at <= now()`,
   );
   for (const row of rows) {
-    await ecs
-      .send(new StopTaskCommand({ cluster: CLUSTER, task: row.task_arn, reason: "Knox: session time limit reached" }))
-      .catch(() => {});
+    try {
+      await ecs.send(new StopTaskCommand({ cluster: CLUSTER, task: row.task_arn, reason: "Knox: session time limit reached" }));
+    } catch (err) {
+      const stillRunning = await isTaskStillRunning(row.task_arn);
+      if (stillRunning) {
+        // eslint-disable-next-line no-console
+        console.error(`Failed to stop session ${row.id} (task still running, will retry):`, err);
+        continue;
+      }
+      // Already stopped/gone by some other path - nothing left to do, fall through to mark it.
+    }
     await pool.query(`UPDATE sessions SET stopped_at = now() WHERE id = $1`, [row.id]);
+  }
+}
+
+async function isTaskStillRunning(taskArn: string): Promise<boolean> {
+  try {
+    const { tasks } = await ecs.send(new DescribeTasksCommand({ cluster: CLUSTER, tasks: [taskArn] }));
+    const status = tasks?.[0]?.lastStatus;
+    return status != null && status !== "STOPPED";
+  } catch {
+    // Can't confirm either way - treat as still running so it gets retried rather than
+    // silently written off.
+    return true;
   }
 }
