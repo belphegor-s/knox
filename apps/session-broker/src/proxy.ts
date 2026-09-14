@@ -2,7 +2,12 @@ import httpProxy from "http-proxy";
 import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
-import { lookupActiveSession } from "./sessions.js";
+import { lookupActiveSession, stopSessionNow } from "./sessions.js";
+
+// The one path this proxy answers itself instead of forwarding to code-server - code-server has
+// no such endpoint, and every other path under a session's subdomain is meant to reach it
+// untouched. Namespaced under /__knox/ so it can never collide with a real code-server asset path.
+const END_SESSION_PATH = "/__knox/end-session";
 
 // Routed by SUBDOMAIN (<sessionId>.<KNOX_SESSION_DOMAIN>), not a URL path prefix - code-server
 // serves a full VS Code web app with hardcoded absolute asset paths (/stable-<hash>/out/...),
@@ -37,12 +42,17 @@ const COUNTDOWN_SCRIPT_BODY = `(function () {
   var expiresAt = new Date(window.__knoxExpiresAt).getTime();
   var el = document.getElementById("knox-session-countdown-time");
   var box = document.getElementById("knox-session-countdown");
+  var endBtn = document.getElementById("knox-session-end");
+  function ended(message) {
+    box.innerHTML = "";
+    box.textContent = message;
+    box.style.color = "#ffb4a8";
+    clearInterval(timer);
+  }
   function tick() {
     var remainingMs = expiresAt - Date.now();
     if (remainingMs <= 0) {
-      box.textContent = "Knox session ended - it was stopped after 15 minutes.";
-      box.style.color = "#ffb4a8";
-      clearInterval(timer);
+      ended("Knox session ended - it was stopped after 15 minutes.");
       return;
     }
     var totalSeconds = Math.floor(remainingMs / 1000);
@@ -53,6 +63,18 @@ const COUNTDOWN_SCRIPT_BODY = `(function () {
   }
   var timer = setInterval(tick, 1000);
   tick();
+  endBtn.addEventListener("click", function () {
+    endBtn.disabled = true;
+    endBtn.textContent = "Ending…";
+    fetch("${END_SESSION_PATH}", { method: "POST" })
+      .then(function () {
+        ended("Knox session ended.");
+      })
+      .catch(function () {
+        endBtn.disabled = false;
+        endBtn.textContent = "End session";
+      });
+  });
 })();`;
 
 const COUNTDOWN_SCRIPT_HASH = `'sha256-${createHash("sha256").update(COUNTDOWN_SCRIPT_BODY, "utf8").digest("base64")}'`;
@@ -64,7 +86,7 @@ function countdownSnippet(expiresAtIso: string): { html: string; extraHashes: re
   const setExpiry = `window.__knoxExpiresAt=${JSON.stringify(expiresAtIso)};`;
   const setExpiryHash = `'sha256-${createHash("sha256").update(setExpiry, "utf8").digest("base64")}'`;
   return {
-    html: `<div id="knox-session-countdown" style="position:fixed;bottom:14px;right:14px;z-index:2147483647;font:500 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:#1a1a1acc;color:#f2ede6;padding:7px 12px;border-radius:7px;border:1px solid #ffffff26;backdrop-filter:blur(6px);pointer-events:none;">Knox session · <span id="knox-session-countdown-time">15:00</span></div>
+    html: `<div id="knox-session-countdown" style="position:fixed;bottom:14px;right:14px;z-index:2147483647;display:flex;align-items:center;gap:10px;font:500 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:#1a1a1acc;color:#f2ede6;padding:7px 8px 7px 12px;border-radius:7px;border:1px solid #ffffff26;backdrop-filter:blur(6px);pointer-events:none;"><span>Knox session · <span id="knox-session-countdown-time">15:00</span></span><button id="knox-session-end" type="button" style="pointer-events:auto;cursor:pointer;font:inherit;background:transparent;border:1px solid #ffffff40;color:#f2ede6;border-radius:5px;padding:4px 9px;">End session</button></div>
 <script>${setExpiry}</script>
 <script>${COUNTDOWN_SCRIPT_BODY}</script>`,
     extraHashes: [setExpiryHash, COUNTDOWN_SCRIPT_HASH],
@@ -118,6 +140,22 @@ async function resolveSession(host: string | undefined): Promise<{ target: strin
 }
 
 export async function proxyHttpRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
+  const sessionId = extractSessionId(req.headers.host, SESSION_DOMAIN);
+  if (sessionId && req.method === "POST" && (req.url ?? "").split("?")[0] === END_SESSION_PATH) {
+    try {
+      await stopSessionNow(sessionId);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(`Failed to end session ${sessionId} on request:`, err);
+      res.writeHead(502, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Could not end the session. It will still stop on its own at the time limit." }));
+      return true;
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ ok: true }));
+    return true;
+  }
+
   const resolved = await resolveSession(req.headers.host);
   if (!resolved) return false;
 

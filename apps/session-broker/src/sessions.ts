@@ -166,6 +166,28 @@ export async function reapExpiredSessions(): Promise<void> {
   }
 }
 
+/** Ends a session on demand (the user clicked "End session"), as opposed to reapExpiredSessions'
+ * timer-driven sweep. Same "confirm before marking stopped" logic as the reaper - a StopTask
+ * failure here must not silently claim a still-running, still-billing task is gone. Returns
+ * false only when the session was already stopped/expired (nothing to do), letting the caller
+ * distinguish "already over" from a real failure worth surfacing. */
+export async function stopSessionNow(id: string): Promise<boolean> {
+  const { rows } = await pool.query<{ task_arn: string }>(
+    `SELECT task_arn FROM sessions WHERE id = $1 AND stopped_at IS NULL`,
+    [id],
+  );
+  const row = rows[0];
+  if (!row) return false;
+
+  try {
+    await ecs.send(new StopTaskCommand({ cluster: CLUSTER, task: row.task_arn, reason: "Knox: user ended the session" }));
+  } catch (err) {
+    if (await isTaskStillRunning(row.task_arn)) throw err;
+  }
+  await pool.query(`UPDATE sessions SET stopped_at = now() WHERE id = $1`, [id]);
+  return true;
+}
+
 async function isTaskStillRunning(taskArn: string): Promise<boolean> {
   try {
     const { tasks } = await ecs.send(new DescribeTasksCommand({ cluster: CLUSTER, tasks: [taskArn] }));
