@@ -1,5 +1,5 @@
 {
-  "family": "knox-runner",
+  "family": "knox-runner-c",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "1024",
@@ -8,8 +8,8 @@
   "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/knox-ecs-task-role",
   "containerDefinitions": [
     {
-      "name": "knox-runner",
-      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/knox-runner:latest",
+      "name": "knox-runner-c",
+      "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/knox-runner-c:latest",
       "essential": true,
       "user": "1000:1000",
       "linuxParameters": {
@@ -20,7 +20,7 @@
         "options": {
           "awslogs-group": "/knox/execution",
           "awslogs-region": "REGION",
-          "awslogs-stream-prefix": "knox-runner",
+          "awslogs-stream-prefix": "knox-runner-c",
           "awslogs-create-group": "true"
         }
       }

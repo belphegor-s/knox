@@ -6,7 +6,7 @@
       "Effect": "Allow",
       "Action": ["ecs:RunTask", "ecs:DescribeTasks"],
       "Resource": [
-        "arn:aws:ecs:*:*:task-definition/knox-runner:*",
+        "arn:aws:ecs:*:*:task-definition/knox-runner*:*",
         "arn:aws:ecs:*:*:task-definition/knox-vscode:*",
         "arn:aws:ecs:*:*:task/knox-execution/*"
       ]
@@ -48,7 +48,7 @@
       "Resource": "*"
     },
     {
-      "Sid": "PushKnoxRunnerImage",
+      "Sid": "PushKnoxImages",
       "Effect": "Allow",
       "Action": [
         "ecr:BatchCheckLayerAvailability",
@@ -59,21 +59,7 @@
         "ecr:UploadLayerPart",
         "ecr:CompleteLayerUpload"
       ],
-      "Resource": "arn:aws:ecr:*:*:repository/knox-runner"
-    },
-    {
-      "Sid": "PushKnoxVscodeImage",
-      "Effect": "Allow",
-      "Action": [
-        "ecr:BatchCheckLayerAvailability",
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:BatchGetImage",
-        "ecr:PutImage",
-        "ecr:InitiateLayerUpload",
-        "ecr:UploadLayerPart",
-        "ecr:CompleteLayerUpload"
-      ],
-      "Resource": "arn:aws:ecr:*:*:repository/knox-vscode"
+      "Resource": ["arn:aws:ecr:*:*:repository/knox-runner*", "arn:aws:ecr:*:*:repository/knox-vscode"]
     }
   ]
 }

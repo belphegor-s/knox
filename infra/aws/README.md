@@ -50,13 +50,20 @@ Read this before deciding to switch a deployment over:
 Replace `ACCOUNT_ID` and `REGION` below with your actual values throughout this directory.
 
 ```bash
-# 1. ECR repo + push the runner image (same infra/runner.Dockerfile as the local path)
-aws ecr create-repository --repository-name knox-runner --region REGION
+# 1. One ECR repo + one image per language - NOT infra/runner.Dockerfile (that single ~1.9GB
+#    image bundling all six toolchains is still what the local docker-runner.ts path uses, but
+#    for ECS it means every cold Fargate task pulls Go/Rust/Java toolchains a Python run will
+#    never touch. Verified against a real task: image pull alone was ~29s of a 73s total run
+#    for a trivial `print(1+1)`. infra/runner-<lang>.Dockerfile only installs what that
+#    language actually needs - "c" and "cpp" share one image since gcc/g++ both come from the
+#    same build-essential package.
 aws ecr get-login-password --region REGION | docker login --username AWS \
   --password-stdin ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
-docker build -f infra/runner.Dockerfile -t knox-runner:latest infra/
-docker tag knox-runner:latest ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/knox-runner:latest
-docker push ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/knox-runner:latest
+for lang in python c java go rust; do
+  aws ecr create-repository --repository-name "knox-runner-$lang" --region REGION
+  docker buildx build --platform linux/amd64 -f "infra/runner-$lang.Dockerfile" \
+    -t "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/knox-runner-$lang:latest" --push infra/
+done
 
 # 2. S3 bucket for code-in / output-out staging - name MUST start with knox-execution- to
 #    match iam-policy.json and task-role-policy.json's resource patterns
@@ -81,8 +88,11 @@ aws iam create-role --role-name knox-ecs-task-role \
 aws iam put-role-policy --role-name knox-ecs-task-role --policy-name knox-task-s3 \
   --policy-document file://infra/aws/task-role-policy.json
 
-# 5. Register the task definition (fill in ACCOUNT_ID/REGION in task-definition.json first)
-aws ecs register-task-definition --cli-input-json file://infra/aws/task-definition.json
+# 5. Register the five task definitions (fill in ACCOUNT_ID/REGION in each
+#    task-definition-runner-<lang>.json first)
+for lang in python c java go rust; do
+  aws ecs register-task-definition --cli-input-json "file://infra/aws/task-definition-runner-$lang.json"
+done
 
 # 6. Networking: a public subnet (existing default VPC is fine) + a security group with
 #    NO inbound rules and outbound limited to HTTPS - the task pulls its image from ECR and
@@ -92,7 +102,14 @@ aws ec2 authorize-security-group-egress --group-id SG_ID --protocol tcp --port 4
 
 # 7. Attach iam-policy.json to whatever IAM user/role apps/worker actually runs as in
 #    production (its own role if running on ECS/EC2 itself, or an IAM user if running
-#    elsewhere) - this is the identity ecs-runner.ts's AWS SDK calls authenticate as.
+#    elsewhere) - this is the identity ecs-runner.ts's AWS SDK calls authenticate as. If that
+#    identity already has an inline policy from an earlier setup, REPLACE it in place (same
+#    --policy-name) with this updated version rather than adding a second one under a new name -
+#    IAM's default quota for the combined size of ALL of one user's inline policies is a mere
+#    2048 bytes, easy to blow past with two separate ones, and there is no way to walk that back
+#    short of raising the account's service quota (an inline policy, once put, cannot be
+#    "shrunk" by anyone without iam:DeleteUserPolicy - check who actually holds that before
+#    experimenting here).
 aws iam put-role-policy --role-name <the role apps/worker runs as> \
   --policy-name knox-execution --policy-document file://infra/aws/iam-policy.json
 ```
@@ -100,11 +117,14 @@ aws iam put-role-policy --role-name <the role apps/worker runs as> \
 ## Environment variables `apps/worker` reads for this backend
 
 See `.env.example` for the full list with descriptions. In short: `KNOX_EXECUTION_BACKEND=ecs`,
-`AWS_REGION`, `KNOX_ECS_CLUSTER=knox-execution`, `KNOX_ECS_TASK_DEFINITION=knox-runner`,
-`KNOX_ECS_SUBNETS` (comma-separated subnet ids), `KNOX_ECS_SECURITY_GROUPS` (comma-separated sg
-ids), `KNOX_CODE_BUCKET=knox-execution-ACCOUNT_ID`. AWS credentials themselves come from the
-standard SDK credential chain (env vars, an attached IAM role if `apps/worker` itself runs on
-AWS, etc) - `ecs-runner.ts` never reads `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` directly.
+`AWS_REGION`, `KNOX_ECS_CLUSTER=knox-execution`, `KNOX_ECS_TASK_DEFINITION_PREFIX=knox-runner`,
+`KNOX_ECS_CONTAINER_NAME_PREFIX=knox-runner` (ecs-runner.ts appends `-python`/`-c`/`-java`/`-go`/
+`-rust` per request, matching the five task definitions registered above - "c" is used for both
+the "c" and "cpp" languages), `KNOX_ECS_SUBNETS` (comma-separated subnet ids),
+`KNOX_ECS_SECURITY_GROUPS` (comma-separated sg ids), `KNOX_CODE_BUCKET=knox-execution-ACCOUNT_ID`.
+AWS credentials themselves come from the standard SDK credential chain (env vars, an attached IAM
+role if `apps/worker` itself runs on AWS, etc) - `ecs-runner.ts` never reads
+`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` directly.
 
 ## Verifying it
 
