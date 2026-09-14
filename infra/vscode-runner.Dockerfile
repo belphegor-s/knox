@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
 
 # Real VS Code (code-server), not a clone - see docs/cloud-runtime.md's session-broker section
-# for why. Pre-installs exactly the four languages the PUBLIC demo offers (Java, Python,
-# Node.js/TS, Bun) - a self-hoster running infra/docker-compose.yml's plain code-server service
-# instead of this image gets a stock code-server with none of these constraints, matching
+# for why. Pre-installs exactly the five languages the PUBLIC demo offers (Java, Python,
+# Node.js/TS, Bun, C++) - a self-hoster running infra/docker-compose.yml's plain code-server
+# service instead of this image gets a stock code-server with none of these constraints, matching
 # "self-hosting has no restrictions" from the product decision this image encodes.
 FROM codercom/code-server:4.96.4
 
@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       python3 \
       python3-pip \
       python3-venv \
+      build-essential \
+      gdb \
+      clangd \
       curl \
       unzip \
       ca-certificates \
@@ -31,13 +34,16 @@ RUN curl -fsSL https://bun.sh/install | bash
 # Language support from Open VSX (code-server's default marketplace - Microsoft's own
 # marketplace terms don't allow redistributing their own extensions here, so this is a
 # deliberately smaller set than Microsoft-hosted VS Code would offer). VS Code OSS already
-# ships TextMate grammars for Java/Python/JS/TS out of the box (syntax highlighting works with
-# zero extensions) - redhat.java is the one confirmed Open VSX listing that adds real language
-# server features (autocomplete, go-to-definition) on top of that for these four languages.
-# Deliberately not guessing at further extension IDs here - verify on open-vsx.org before
-# adding any more, a wrong id fails this build outright rather than degrading gracefully.
+# ships TextMate grammars for Java/Python/JS/TS/C++ out of the box (syntax highlighting works
+# with zero extensions) - redhat.java and llvm-vs-code-extensions.vscode-clangd are the two
+# confirmed Open VSX listings that add real language server features (autocomplete,
+# go-to-definition) on top of that, for Java and C++ respectively; clangd itself (the binary the
+# extension shells out to) comes from the apt install above. Deliberately not guessing at further
+# extension IDs here - verify on open-vsx.org before adding any more, a wrong id fails this build
+# outright rather than degrading gracefully.
 USER coder
-RUN code-server --install-extension redhat.java
+RUN code-server --install-extension redhat.java \
+    && code-server --install-extension llvm-vs-code-extensions.vscode-clangd
 
 USER root
 WORKDIR /home/coder/project
