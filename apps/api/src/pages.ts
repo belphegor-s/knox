@@ -21,6 +21,7 @@ const BASE_STYLE = `
     --success: #8fb37a;
     --radius: 8px;
     --radius-lg: 14px;
+    --control-h: 40px;
     --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
@@ -38,10 +39,10 @@ const BASE_STYLE = `
   .card { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
   .card h2 { font-size: 15px; font-weight: 600; color: var(--text-0); margin: 0 0 14px; }
   label { display: block; font-size: 12.5px; color: var(--text-2); margin-bottom: 6px; }
-  input[type="email"], input[type="text"] { width: 100%; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--bg-0); color: var(--text-0); font-size: 14px; font-family: inherit; transition: border-color 0.15s ease; }
+  input[type="email"], input[type="text"] { width: 100%; height: var(--control-h); padding: 0 12px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--bg-0); color: var(--text-0); font-size: 14px; font-family: inherit; transition: border-color 0.15s ease; }
   input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   input:disabled { opacity: 0.6; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: 13.5px; font-weight: 600; padding: 9px 16px; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; text-decoration: none; font-family: inherit; transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: var(--control-h); font-size: 13.5px; font-weight: 600; padding: 0 16px; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; text-decoration: none; font-family: inherit; transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease; }
   .btn-primary { background: var(--accent); color: var(--accent-fg); }
   .btn-primary:hover { opacity: 0.88; }
   .btn-ghost { background: transparent; border-color: var(--border-strong); color: var(--text-1); }
