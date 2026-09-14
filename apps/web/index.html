@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,450;0,9..144,560;0,9..144,660;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
 
@@ -41,7 +41,7 @@
         --success: #6f9257;
         --radius: 5px;
         --radius-lg: 8px;
-        --serif: "IBM Plex Serif", Georgia, "Iowan Old Style", serif;
+        --serif: "Fraunces", Georgia, "Iowan Old Style", serif;
         --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
         --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
         --max-w: 1100px;
@@ -639,36 +639,50 @@
         color: var(--success);
       }
 
-      /* ---------- scale section ---------------------------------------------------------- */
-      .scale-list {
+      /* ---------- metrics section ---------------------------------------------------------- */
+      .section-head--center {
+        text-align: center;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .metrics {
         width: calc(100% - 48px);
-        max-width: var(--max-w);
+        max-width: 760px;
         margin: 0 auto;
         display: grid;
         grid-template-columns: 1fr;
-        gap: 32px;
+        gap: 44px;
+        text-align: center;
       }
-      @media (min-width: 720px) {
-        .scale-list {
+      @media (min-width: 640px) {
+        .metrics {
           grid-template-columns: repeat(3, 1fr);
         }
       }
-      .scale-item {
-        border-top: 1px solid var(--border-strong);
-        padding-top: 18px;
-      }
-      .scale-item h3 {
+      .metric-num {
         font-family: var(--serif);
-        font-weight: 600;
-        font-size: 18px;
+        font-weight: 660;
+        font-size: 64px;
+        line-height: 1;
+        letter-spacing: -0.01em;
         color: var(--text-0);
-        margin: 0 0 8px;
+        margin-bottom: 12px;
+        font-variant-numeric: tabular-nums;
       }
-      .scale-item p {
+      .metric p {
         margin: 0;
         font-size: 13.5px;
-        line-height: 1.65;
+        line-height: 1.55;
         color: var(--text-2);
+        max-width: 220px;
+        margin-inline: auto;
+      }
+      .metrics-footnote {
+        text-align: center;
+        max-width: 480px;
+        margin: 44px auto 0;
+        font-size: 13px;
+        color: var(--text-3);
       }
 
       /* ---------- feature cards ---------- */
@@ -1244,24 +1258,25 @@ curl https://knox-api.procd.cc/v1/execute \
       </section>
 
       <section class="section">
-        <div class="section-head fade">
-          <h2>Built to scale past a demo</h2>
-          <p>Every session and every execution gets its own isolated compute - no shared kernel, no noisy neighbors, whether it's one user or a whole team.</p>
+        <div class="section-head section-head--center fade">
+          <h2>The real numbers</h2>
+          <p>No fabricated usage stats - these are the actual caps and counts the product runs on, the same ones enforced server-side.</p>
         </div>
-        <div class="scale-list fade">
-          <div class="scale-item">
-            <h3>One task per run</h3>
-            <p>Every session or execution gets its own Fargate microVM, not a shared container pool. Isolation doesn't degrade as usage grows.</p>
+        <div class="metrics fade">
+          <div class="metric">
+            <div class="metric-num" data-count-to="15" aria-label="15 minutes">0</div>
+            <p>minutes per public session, then the container is torn down</p>
           </div>
-          <div class="scale-item">
-            <h3>No idle hosts</h3>
-            <p>Nothing runs until a session or execution is actually requested, and it's torn down the moment it ends.</p>
+          <div class="metric">
+            <div class="metric-num" data-count-to="2" aria-label="2 minutes">0</div>
+            <p>minute hard cap on every code-execution API call</p>
           </div>
-          <div class="scale-item">
-            <h3>No shared ceiling</h3>
-            <p>Self-hosted, there's no session cap, no language limit, and no shared infrastructure to plan capacity around at all.</p>
+          <div class="metric">
+            <div class="metric-num" data-count-to="6" aria-label="6 languages">0</div>
+            <p>languages with a real toolchain, not a stub interpreter</p>
           </div>
         </div>
+        <p class="metrics-footnote fade">Self-hosted, none of these caps apply - no session limit, no execution limit, no language restriction.</p>
       </section>
 
       <section class="section" id="how-it-works">
@@ -1372,6 +1387,48 @@ curl https://knox-api.procd.cc/v1/execute \
         } else {
           reveals.forEach(function (el) {
             el.classList.add("in");
+          });
+        }
+
+        // ---- metrics: count up from 0 once scrolled into view, not on page load - the
+        // motion is meant to draw the eye to a real number, not run before anyone's looking.
+        var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var countEls = document.querySelectorAll("[data-count-to]");
+        function animateCount(el) {
+          var target = parseInt(el.getAttribute("data-count-to"), 10);
+          if (reducedMotion || !("requestAnimationFrame" in window)) {
+            el.textContent = String(target);
+            return;
+          }
+          var duration = 1000;
+          var start = null;
+          function step(ts) {
+            if (start === null) start = ts;
+            var progress = Math.min((ts - start) / duration, 1);
+            var eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = String(Math.round(eased * target));
+            if (progress < 1) window.requestAnimationFrame(step);
+          }
+          window.requestAnimationFrame(step);
+        }
+        if ("IntersectionObserver" in window && countEls.length) {
+          var countObserver = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                  animateCount(entry.target);
+                  countObserver.unobserve(entry.target);
+                }
+              });
+            },
+            { threshold: 0.5 },
+          );
+          countEls.forEach(function (el) {
+            countObserver.observe(el);
+          });
+        } else {
+          countEls.forEach(function (el) {
+            el.textContent = el.getAttribute("data-count-to");
           });
         }
 
