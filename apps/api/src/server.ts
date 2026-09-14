@@ -340,6 +340,22 @@ app.post("/api/execute", async (req, res) => {
   res.end();
 });
 
+// Catch-all: any request that didn't match a route above. A signed-in user hitting a dead or
+// stale link (an old bookmark, a typo'd path) stands more to gain from landing on their
+// dashboard than from a bare 404 - so only a GET, and only once there's an actual session to
+// send them to, redirects; everything else (no session, or a non-GET) falls through to the
+// normal 404. Placed last on purpose - Express only reaches this once nothing above matched.
+app.use(async (req, res) => {
+  if (req.method === "GET" && HAS_DATABASE) {
+    const session = await resolveSession(sessionTokenFrom(req));
+    if (session) {
+      res.redirect("/account");
+      return;
+    }
+  }
+  res.status(404).send("Not found");
+});
+
 setInterval(() => pruneRateLimitState(60_000), 60_000).unref();
 
 const port = Number(process.env.PORT) || 8081;

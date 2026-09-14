@@ -16,9 +16,9 @@ const BASE_STYLE = `
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
-  :root { --bg-0: #0b0c0e; --bg-1: #0e0f11; --bg-2: #16181b; --border: #232529; --border-strong: #34373c; --text-0: #eceef0; --text-1: #d8dadd; --text-2: #8b9099; --text-3: #5c6066; color-scheme: dark; }
+  :root { --bg-0: #0b0c0e; --bg-1: #0e0f11; --bg-2: #16181b; --border: #232529; --border-strong: #34373c; --text-0: #eceef0; --text-1: #d8dadd; --text-2: #8b9099; --text-3: #5c6066; --syn-string: #9fb87a; color-scheme: dark; }
   @media (prefers-color-scheme: light) {
-    :root { --bg-0: #f4f2ef; --bg-1: #fbfaf8; --bg-2: #f0eee9; --border: #e3e0da; --border-strong: #cfccc5; --text-0: #16171a; --text-1: #24262b; --text-2: #63666d; --text-3: #96999f; color-scheme: light; }
+    :root { --bg-0: #f4f2ef; --bg-1: #fbfaf8; --bg-2: #f0eee9; --border: #e3e0da; --border-strong: #cfccc5; --text-0: #16171a; --text-1: #24262b; --text-2: #63666d; --text-3: #96999f; --syn-string: #3f6b2a; color-scheme: light; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg-0); color: var(--text-1); font-family: var(--sans); font-size: 14px; line-height: 1.6; }
@@ -47,7 +47,9 @@ const BASE_STYLE = `
   .usage-bar { height: 6px; border-radius: 3px; background: var(--bg-0); overflow: hidden; margin-top: 8px; }
   .usage-bar-fill { height: 100%; background: var(--accent); }
   .usage-label { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); margin-top: 4px; }
-  pre { background: var(--bg-0); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; overflow-x: auto; font-size: 12.5px; font-family: var(--mono); color: var(--text-1); }
+  pre { background: var(--bg-0); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; overflow-x: auto; font-size: 12.5px; font-family: var(--mono); color: var(--text-1); line-height: 1.8; }
+  .tok-str { color: var(--syn-string); }
+  .tok-c { color: var(--text-3); }
   .msg { font-size: 13px; padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; }
   .msg-error { background: rgba(193, 80, 47, 0.12); color: var(--danger); border: 1px solid rgba(193, 80, 47, 0.3); }
   .msg-success { background: rgba(143, 179, 122, 0.12); color: var(--success); border: 1px solid rgba(143, 179, 122, 0.3); }
@@ -142,10 +144,11 @@ export function dashboardPageHtml(opts: { email: string; keys: ApiKeySummary[]; 
 
   <div class="card">
     <h2 style="font-size:15px; color:var(--text-0); margin:0 0 14px;">Call the API</h2>
-    <pre>curl https://knox-api.procd.cc/v1/execute \\
-  -H "Authorization: Bearer knox_live_..." \\
-  -H "Content-Type: application/json" \\
-  -d '{"language":"python","filename":"main.py","code":"print(1+1)"}'</pre>
+    <pre><span class="tok-c"># python, with numpy/pandas/requests pre-installed</span>
+curl https://knox-api.procd.cc/v1/execute \\
+  -H <span class="tok-str">"Authorization: Bearer knox_live_..."</span> \\
+  -H <span class="tok-str">"Content-Type: application/json"</span> \\
+  -d <span class="tok-str">'{"language":"python","filename":"main.py","code":"print(1+1)"}'</span></pre>
     <p class="footer-link" style="margin:12px 0 0;">Languages: python, c, cpp, java, go, rust. Max 2 minutes per run.</p>
   </div>
 
