@@ -10,7 +10,7 @@
     <meta name="theme-color" content="#0b0c0e" />
     <meta
       name="description"
-      content="Knox runs real VS Code in your browser: a live sandbox, no install and no password, open in one click. Self-host it for unrestricted, unlimited use."
+      content="Knox runs real VS Code in your browser: a live sandbox, no install and no password, open in one click. Plus a code-execution API for running Python, C, C++, Java, Go, and Rust from your own apps. Self-host either for unrestricted use."
     />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
@@ -19,7 +19,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Knox" />
     <meta property="og:title" content="Knox" />
-    <meta property="og:description" content="Real VS Code, open in one click. No install, no password. Self-hostable for unrestricted use." />
+    <meta property="og:description" content="Real VS Code, open in one click. Plus a code-execution API for your own apps. No install, no password. Self-hostable for unrestricted use." />
     <meta property="og:image" content="/og-image.png?v=2" />
     <meta name="twitter:card" content="summary_large_image" />
 
@@ -28,7 +28,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,600&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
 
@@ -36,26 +36,27 @@
       :root {
         --accent: #c1602f;
         --accent-fg: #fff6f0;
+        --accent-2: #4f7fd6;
+        --accent-2-fg: #f2f6ff;
         --success: #8fb37a;
         --radius: 8px;
-        --radius-lg: 14px;
+        --radius-lg: 16px;
+        --radius-xl: 26px;
         --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-        --serif: "Playfair Display", "Iowan Old Style", Georgia, serif;
         --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-        --max-w: 1080px;
-        --grid-line: rgba(127, 127, 127, 0.14);
+        --max-w: 1160px;
       }
       /* Same neutral scale as the app itself (src/styles/theme.css) - the landing page and
          the product should look like the same thing, not two different color systems. */
       :root,
       :root[data-theme="dark"] {
-        --bg-0: #0b0c0e;
+        --bg-0: #08090b;
         --bg-1: #0e0f11;
         --bg-2: #16181b;
         --bg-3: #1e2023;
         --border: #232529;
         --border-strong: #34373c;
-        --text-0: #eceef0;
+        --text-0: #f2f3f5;
         --text-1: #d8dadd;
         --text-2: #8b9099;
         --text-3: #5c6066;
@@ -122,36 +123,11 @@
         overflow-x: hidden;
         position: relative;
       }
-      /* Editorial column grid, not a decorative texture: two vertical rules marking the
-         content column's edges (visible in the margin on wide viewports, self-hiding on
-         narrow ones since the calc() lands off-screen), plus a horizontal rule between
-         every major section. This is the actual structure the page is built on. */
-      body::before,
-      body::after {
-        content: "";
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        width: 1px;
-        background: var(--border);
-        z-index: 0;
-        pointer-events: none;
-      }
-      body::before {
-        left: calc(50% - (var(--max-w) / 2) - 48px);
-      }
-      body::after {
-        left: calc(50% + (var(--max-w) / 2) + 48px);
-      }
       nav,
       main,
       footer {
         position: relative;
         z-index: 1;
-      }
-      .section + .section,
-      #features {
-        border-top: 1px solid var(--border);
       }
       img {
         max-width: 100%;
@@ -159,6 +135,9 @@
       }
       a {
         color: inherit;
+      }
+      code {
+        font-family: var(--mono);
       }
       .wrap {
         max-width: var(--max-w);
@@ -171,15 +150,36 @@
       }
       .js .fade {
         opacity: 0;
-        transform: translateY(10px);
-        transition: opacity 0.6s ease, transform 0.6s ease;
+        transform: translateY(16px);
+        transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .js .fade.in {
         opacity: 1;
         transform: none;
       }
+      .js .fade-left {
+        transform: translate(-22px, 0);
+      }
+      .js .fade-left.in {
+        transform: none;
+      }
+      .js .fade-right {
+        transform: translate(22px, 0);
+      }
+      .js .fade-right.in {
+        transform: none;
+      }
+      .js .fade-scale {
+        transform: scale(0.96);
+      }
+      .js .fade-scale.in {
+        transform: none;
+      }
       @media (prefers-reduced-motion: reduce) {
-        .js .fade {
+        .js .fade,
+        .js .fade-left,
+        .js .fade-right,
+        .js .fade-scale {
           opacity: 1;
           transform: none;
           transition: none;
@@ -193,7 +193,7 @@
         justify-content: space-between;
         max-width: var(--max-w);
         margin: 0 auto;
-        padding: 24px 24px 0;
+        padding: 22px 24px 0;
       }
       .brand {
         display: flex;
@@ -201,19 +201,19 @@
         gap: 9px;
         text-decoration: none;
         font-size: 14px;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: -0.01em;
         color: var(--text-0);
       }
       .brand svg {
-        width: 22px;
-        height: 22px;
-        border-radius: 5px;
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
       }
       .nav-right {
         display: flex;
         align-items: center;
-        gap: 20px;
+        gap: 22px;
       }
       .nav-link {
         font-size: 13.5px;
@@ -223,7 +223,7 @@
       .nav-link:hover {
         color: var(--text-0);
       }
-      @media (max-width: 560px) {
+      @media (max-width: 640px) {
         .nav-link {
           display: none;
         }
@@ -233,8 +233,8 @@
         border: 1px solid var(--border);
         background: var(--bg-1);
         color: var(--text-2);
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -263,19 +263,31 @@
         align-items: center;
         gap: 6px;
         font-size: 13.5px;
-        font-weight: 600;
-        padding: 9px 16px;
-        border-radius: var(--radius);
+        font-weight: 700;
+        padding: 10px 18px;
+        border-radius: 999px;
         text-decoration: none;
         border: 1px solid transparent;
-        transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+        transition: transform 0.15s ease, opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      }
+      .btn:active {
+        transform: scale(0.97);
       }
       .btn-primary {
         background: var(--accent);
         color: var(--accent-fg);
+        box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--accent) 70%, transparent);
       }
       .btn-primary:hover {
-        opacity: 0.88;
+        opacity: 0.9;
+      }
+      .btn-secondary {
+        background: var(--accent-2);
+        color: var(--accent-2-fg);
+        box-shadow: 0 8px 24px -10px color-mix(in srgb, var(--accent-2) 70%, transparent);
+      }
+      .btn-secondary:hover {
+        opacity: 0.9;
       }
       .btn-ghost {
         background: var(--bg-1);
@@ -285,61 +297,90 @@
       .btn-ghost:hover {
         border-color: var(--border-strong);
       }
+      .btn-lg {
+        padding: 13px 22px;
+        font-size: 14.5px;
+      }
+
       /* ---------- hero ---------- */
       .hero {
         position: relative;
-        padding: 88px 24px 64px;
+        padding: 92px 24px 60px;
         text-align: center;
         isolation: isolate;
+        overflow: hidden;
+      }
+      .hero-glow {
+        position: absolute;
+        inset: -20% -10% auto -10%;
+        height: 720px;
+        z-index: -1;
+        background: radial-gradient(46% 60% at 30% 15%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
+          radial-gradient(40% 55% at 76% 10%, color-mix(in srgb, var(--accent-2) 24%, transparent), transparent 70%);
+        filter: blur(10px);
+        pointer-events: none;
       }
       .eyebrow {
-        display: block;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
         font-family: var(--mono);
         font-size: 12.5px;
         color: var(--text-2);
-        margin: 0 0 20px;
-        letter-spacing: 0.01em;
+        margin: 0 0 22px;
+        padding: 6px 13px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--bg-1);
+      }
+      .eyebrow-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--success);
+        flex-shrink: 0;
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
       }
       .hero h1 {
-        font-size: clamp(34px, 5.2vw, 58px);
-        line-height: 1.08;
-        letter-spacing: -0.03em;
-        margin: 0 auto 20px;
-        max-width: 700px;
-        color: var(--text-0);
-        font-weight: 650;
+        font-size: clamp(38px, 6.4vw, 74px);
+        line-height: 1.02;
+        letter-spacing: -0.035em;
+        margin: 0 auto 22px;
+        max-width: 800px;
+        font-weight: 800;
+        background: linear-gradient(100deg, var(--text-0) 30%, var(--accent) 55%, var(--accent-2) 85%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
       }
-      .hero h1 span {
-        font-family: var(--serif);
-        font-style: italic;
-        font-weight: 600;
-        color: var(--accent);
-        letter-spacing: -0.01em;
+      @media (prefers-contrast: more) {
+        .hero h1 {
+          background: none;
+          -webkit-background-clip: initial;
+          background-clip: initial;
+          color: var(--text-0);
+        }
       }
       .hero-sub {
-        font-size: 16.5px;
+        font-size: 18px;
         line-height: 1.6;
         color: var(--text-2);
-        max-width: 460px;
-        margin: 0 auto 32px;
+        max-width: 480px;
+        margin: 0 auto 34px;
       }
       .hero-ctas {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        margin-bottom: 20px;
+        gap: 12px;
+        margin-bottom: 22px;
         flex-wrap: wrap;
-      }
-      .btn-lg {
-        padding: 12px 20px;
-        font-size: 14px;
       }
       .hero-meta {
         font-family: var(--mono);
         font-size: 11.5px;
         color: var(--text-3);
-        margin: 0 0 18px;
+        margin: 0 0 20px;
       }
       .lang-chips {
         display: flex;
@@ -347,7 +388,7 @@
         justify-content: center;
         gap: 8px;
         flex-wrap: wrap;
-        margin: 0 0 52px;
+        margin: 0 0 56px;
       }
       .lang-chip {
         font-family: var(--mono);
@@ -366,27 +407,23 @@
 
       .shot {
         width: 100%;
-        max-width: 1000px;
+        max-width: 1040px;
         margin: 0 auto;
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-xl);
         border: 1px solid var(--border);
         overflow: hidden;
-        box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
       :root[data-theme="light"] .shot {
-        box-shadow: 0 24px 60px -24px rgba(20, 17, 10, 0.14);
+        box-shadow: 0 30px 70px -28px rgba(20, 17, 10, 0.16);
       }
       @media (prefers-color-scheme: light) {
         :root:not([data-theme="dark"]) .shot {
-          box-shadow: 0 24px 60px -24px rgba(20, 17, 10, 0.14);
+          box-shadow: 0 30px 70px -28px rgba(20, 17, 10, 0.16);
         }
       }
       .shot {
         aspect-ratio: 2.3 / 1;
-        /* aspect-ratio alone ties height purely to width, so the box kept shrinking the
-           whole way down from desktop to the sidebar-hiding breakpoint below, not just past
-           it - min-height caps that shrink at a size the code stays legible, at any width,
-           while still letting the box grow taller on wide viewports via the ratio above. */
         min-height: 340px;
       }
 
@@ -421,6 +458,7 @@
       .mock-badge {
         color: var(--text-3);
         font-size: 11.5px;
+        font-family: var(--mono);
       }
       .mock-body {
         display: flex;
@@ -483,6 +521,39 @@
         white-space: pre;
         color: var(--text-1);
       }
+      /* A cascading reveal, not a decorative loop: once the mockup scrolls into view (the
+         existing .fade/.in observer below adds .in to .shot), each line materializes in
+         source order like it was just typed - a single orchestrated moment, not a
+         perpetual animation drawing attention to itself. */
+      .js .shot .mock-line {
+        opacity: 0;
+        transform: translateX(-8px);
+      }
+      .js .shot.in .mock-line {
+        animation: knox-line-reveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      .js .shot.in .mock-line:nth-child(1) { animation-delay: 0.05s; }
+      .js .shot.in .mock-line:nth-child(2) { animation-delay: 0.13s; }
+      .js .shot.in .mock-line:nth-child(3) { animation-delay: 0.19s; }
+      .js .shot.in .mock-line:nth-child(4) { animation-delay: 0.25s; }
+      .js .shot.in .mock-line:nth-child(5) { animation-delay: 0.33s; }
+      .js .shot.in .mock-line:nth-child(6) { animation-delay: 0.39s; }
+      .js .shot.in .mock-line:nth-child(7) { animation-delay: 0.44s; }
+      .js .shot.in .mock-line:nth-child(8) { animation-delay: 0.5s; }
+      .js .shot.in .mock-line:nth-child(9) { animation-delay: 0.57s; }
+      .js .shot.in .mock-line:nth-child(10) { animation-delay: 0.63s; }
+      @keyframes knox-line-reveal {
+        to { opacity: 1; transform: none; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .js .shot .mock-line {
+          opacity: 1;
+          transform: none;
+        }
+        .js .shot.in .mock-line {
+          animation: none;
+        }
+      }
       .mock-ln {
         display: inline-block;
         width: 24px;
@@ -510,32 +581,206 @@
 
       /* ---------- sections ---------- */
       .section {
-        padding: 100px 0;
+        padding: 108px 0;
+        border-top: 1px solid var(--border);
       }
       .section-head {
         width: calc(100% - 48px);
-        max-width: 560px;
-        margin: 0 auto 48px;
-        text-align: center;
-      }
-      .section-head .eyebrow {
+        max-width: 620px;
+        margin: 0 auto 52px;
         text-align: center;
       }
       .section-head h2 {
-        font-size: clamp(26px, 3.2vw, 34px);
-        letter-spacing: -0.02em;
-        margin: 0 0 12px;
+        font-size: clamp(28px, 3.6vw, 42px);
+        letter-spacing: -0.025em;
+        margin: 0 0 14px;
         color: var(--text-0);
-        font-weight: 640;
+        font-weight: 800;
+        line-height: 1.1;
       }
       .section-head p {
         color: var(--text-2);
-        font-size: 15px;
+        font-size: 16px;
         line-height: 1.6;
         margin: 0;
       }
 
-      /* ---------- feature cards ---------- */
+      /* ---------- product panel (execution API hero feature) ---------------------------- */
+      .product-panel {
+        width: calc(100% - 48px);
+        max-width: var(--max-w);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 40px;
+        align-items: center;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        background: linear-gradient(165deg, var(--bg-1), var(--bg-2));
+        padding: 44px;
+        position: relative;
+        overflow: hidden;
+      }
+      .product-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(60% 80% at 100% 0%, color-mix(in srgb, var(--accent-2) 16%, transparent), transparent 70%);
+        pointer-events: none;
+      }
+      @media (min-width: 880px) {
+        .product-panel {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .product-copy .eyebrow {
+        border-color: color-mix(in srgb, var(--accent-2) 40%, var(--border));
+        color: var(--accent-2);
+      }
+      .product-copy .eyebrow .eyebrow-dot {
+        background: var(--accent-2);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-2) 22%, transparent);
+      }
+      .product-copy h2 {
+        font-size: clamp(26px, 3.4vw, 38px);
+        line-height: 1.08;
+        letter-spacing: -0.025em;
+        margin: 0 0 16px;
+        color: var(--text-0);
+        font-weight: 800;
+      }
+      .product-copy p {
+        color: var(--text-2);
+        font-size: 15.5px;
+        line-height: 1.65;
+        margin: 0 0 26px;
+        max-width: 440px;
+      }
+      .product-facts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 22px;
+        margin: 28px 0 0;
+        padding: 20px 0 0;
+        border-top: 1px solid var(--border);
+      }
+      .product-fact strong {
+        display: block;
+        font-size: 21px;
+        color: var(--text-0);
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+      .product-fact span {
+        display: block;
+        font-size: 12px;
+        color: var(--text-3);
+        margin-top: 2px;
+      }
+      .code-panel {
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        background: var(--bg-0);
+        overflow: hidden;
+        box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.5);
+        position: relative;
+        z-index: 1;
+      }
+      .code-panel-head {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+      }
+      .code-panel-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--border-strong);
+      }
+      .code-panel-title {
+        margin-left: 8px;
+        font-family: var(--mono);
+        font-size: 11.5px;
+        color: var(--text-3);
+      }
+      .code-panel pre {
+        margin: 0;
+        padding: 20px;
+        font-family: var(--mono);
+        font-size: 12.5px;
+        line-height: 1.8;
+        color: var(--text-1);
+        overflow-x: auto;
+      }
+      .code-panel .tok-kw { color: var(--syn-keyword); }
+      .code-panel .tok-str { color: var(--syn-string); }
+      .code-panel .tok-fn { color: var(--syn-function); }
+      .code-panel .tok-num { color: var(--syn-number); }
+      .code-panel .tok-c { color: var(--text-3); }
+      .code-panel-response {
+        border-top: 1px solid var(--border);
+        padding: 14px 20px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--success);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .code-panel-response svg {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+      }
+
+      /* ---------- scale section ---------------------------------------------------------- */
+      .scale-grid {
+        width: calc(100% - 48px);
+        max-width: var(--max-w);
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+      }
+      @media (min-width: 720px) {
+        .scale-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      .scale-card {
+        background: var(--bg-1);
+        padding: 36px 32px;
+        transition: background 0.2s ease;
+      }
+      .scale-card:hover {
+        background: var(--bg-2);
+      }
+      .scale-card strong {
+        display: block;
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--text-0);
+        margin-bottom: 10px;
+        background: linear-gradient(120deg, var(--text-0), var(--accent));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .scale-card p {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.6;
+        color: var(--text-2);
+      }
+
+      /* ---------- feature cards (bento) ---------------------------------------------------- */
       .grid {
         width: calc(100% - 48px);
         max-width: var(--max-w);
@@ -545,13 +790,17 @@
         gap: 1px;
         background: var(--border);
         border: 1px solid var(--border);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-xl);
         overflow: hidden;
       }
       .card {
         grid-column: span 6;
         background: var(--bg-1);
-        padding: 28px;
+        padding: 30px;
+        transition: background 0.2s ease;
+      }
+      .card:hover {
+        background: var(--bg-2);
       }
       @media (min-width: 720px) {
         .card--half {
@@ -562,20 +811,25 @@
         }
       }
       .card-icon {
-        width: 20px;
-        height: 20px;
+        width: 22px;
+        height: 22px;
         color: var(--accent);
-        margin-bottom: 14px;
+        margin-bottom: 16px;
+        transition: transform 0.2s ease;
+      }
+      .card:hover .card-icon {
+        transform: scale(1.12) rotate(-4deg);
       }
       .card-icon svg {
         width: 100%;
         height: 100%;
       }
       .card h3 {
-        font-size: 15px;
-        font-weight: 600;
+        font-size: 16px;
+        font-weight: 700;
         color: var(--text-0);
-        margin: 0 0 8px;
+        margin: 0 0 9px;
+        letter-spacing: -0.01em;
       }
       .card p {
         font-size: 13.5px;
@@ -584,7 +838,7 @@
         margin: 0;
       }
       .card-shot {
-        margin: -28px -28px 18px;
+        margin: -30px -30px 20px;
         border-bottom: 1px solid var(--border);
         aspect-ratio: 3 / 1;
         overflow: hidden;
@@ -633,6 +887,15 @@
         height: 13px;
         background: var(--accent);
         vertical-align: -2px;
+        animation: knox-cursor-blink 1s step-end infinite;
+      }
+      @keyframes knox-cursor-blink {
+        50% { opacity: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .mock-cursor {
+          animation: none;
+        }
       }
 
       /* ---------- session launch overlay ---------- */
@@ -789,23 +1052,35 @@
         max-width: var(--max-w);
         margin: 0 auto;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 32px;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
       }
       .step {
-        border-left: 2px solid var(--border);
-        padding-left: 18px;
+        background: var(--bg-1);
+        padding: 32px 26px;
+        position: relative;
       }
       .step span {
         font-family: var(--mono);
-        font-size: 11.5px;
+        font-size: 12px;
         color: var(--accent);
-        display: block;
-        margin-bottom: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+        margin-bottom: 16px;
       }
       .step h4 {
         margin: 0 0 8px;
-        font-size: 14.5px;
+        font-size: 15px;
+        font-weight: 700;
         color: var(--text-0);
       }
       .step p {
@@ -821,32 +1096,47 @@
         max-width: var(--max-w);
         margin: 0 auto;
         text-align: center;
-        padding: 72px 40px;
-        border-radius: var(--radius-lg);
+        padding: 80px 40px;
+        border-radius: var(--radius-xl);
         border: 1px solid var(--border);
-        background: var(--bg-1);
+        background: linear-gradient(165deg, var(--bg-1), var(--bg-2));
+        position: relative;
+        overflow: hidden;
+      }
+      .close::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(50% 90% at 50% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+        pointer-events: none;
       }
       .close h2 {
-        font-size: clamp(24px, 3vw, 32px);
+        font-size: clamp(28px, 4vw, 42px);
         color: var(--text-0);
         margin: 0 0 14px;
-        letter-spacing: -0.02em;
-        font-weight: 640;
+        letter-spacing: -0.025em;
+        font-weight: 800;
+        position: relative;
       }
       .close p {
         color: var(--text-2);
-        margin: 0 0 28px;
-        font-size: 14.5px;
+        margin: 0 0 30px;
+        font-size: 15px;
+        position: relative;
+      }
+      .close .hero-ctas {
+        position: relative;
+        margin-bottom: 0;
       }
 
       footer {
         max-width: var(--max-w);
         margin: 0 auto;
-        padding: 44px 24px 60px;
+        padding: 56px 24px 60px;
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
-        gap: 16px;
+        gap: 32px;
         flex-wrap: wrap;
         border-top: 1px solid var(--border);
         color: var(--text-3);
@@ -854,24 +1144,40 @@
       }
       footer .brand {
         color: var(--text-2);
+        margin-bottom: 10px;
       }
       footer .brand svg {
         width: 18px;
         height: 18px;
       }
-      .footer-links {
+      .footer-cols {
         display: flex;
-        align-items: center;
-        gap: 18px;
-        font-family: var(--mono);
-        font-size: 12px;
+        gap: 56px;
+        flex-wrap: wrap;
       }
-      .footer-links a {
+      .footer-col h5 {
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-3);
+        margin: 0 0 12px;
+        font-weight: 600;
+      }
+      .footer-col a {
+        display: block;
         text-decoration: none;
         color: var(--text-2);
+        font-size: 13.5px;
+        margin-bottom: 9px;
       }
-      .footer-links a:hover {
+      .footer-col a:hover {
         color: var(--text-0);
+      }
+      .footer-copyright {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-3);
+        margin-top: 14px;
       }
     </style>
   </head>
@@ -915,6 +1221,7 @@
       </a>
       <div class="nav-right">
         <a class="nav-link" href="#features">Features</a>
+        <a class="nav-link" href="#api">API</a>
         <a class="nav-link" href="https://github.com/belphegor-s/knox">Source</a>
         <button class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme" title="Toggle color theme">
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>
@@ -926,8 +1233,9 @@
 
     <main id="top">
       <section class="hero">
-        <span class="eyebrow">real VS Code &middot; self-hostable</span>
-        <h1>Real VS Code,<br />open in <span>one click</span>.</h1>
+        <div class="hero-glow" aria-hidden="true"></div>
+        <span class="eyebrow"><span class="eyebrow-dot"></span>A live sandbox, not a screenshot</span>
+        <h1>Real VS Code.<br />Running the moment you click.</h1>
         <p class="hero-sub">A full coding session in your browser. No install, no password, gone when you close the tab.</p>
         <div class="hero-ctas">
           <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
@@ -941,7 +1249,7 @@
           <span class="lang-chip">Bun</span>
           <span class="lang-chip lang-chip--muted">+ any language, self-hosted</span>
         </div>
-        <div class="shot fade">
+        <div class="shot fade fade-scale">
           <div class="mock-window" role="img" aria-label="Knox with an open TypeScript project: a file tree, tabbed editor, and syntax-highlighted code">
             <div class="mock-titlebar">
               <span>Knox<span class="mock-crumb-sep">/</span>task-api</span>
@@ -981,8 +1289,8 @@
 
       <section class="section" id="features">
         <div class="section-head fade">
-          <span class="eyebrow">what's real</span>
           <h2>Every panel here runs for real</h2>
+          <p>Not a browser reimplementation of an editor - the actual thing, running server-side.</p>
         </div>
         <div class="grid fade">
           <div class="card card--half">
@@ -994,7 +1302,7 @@
           </div>
           <div class="card card--half">
             <div class="card-shot">
-              <div class="mock-terminal" role="img" aria-label="Knox terminal running bench.ts and printing its output">
+              <div class="mock-terminal" role="img" aria-label="Knox terminal running bench.py and printing its output">
                 <div class="mock-term-tabs">
                   <span class="mock-term-tab mock-term-tab--active">Terminal</span>
                   <span class="mock-term-tab">Problems</span>
@@ -1037,29 +1345,93 @@
         </div>
       </section>
 
+      <section class="section" id="api">
+        <div class="section-head fade">
+          <h2>A code-execution API, for your own apps</h2>
+          <p>The second product, not a footnote: run untrusted code from your own backend, CI pipeline, or grading tool - sandboxed, capped, and logged.</p>
+        </div>
+        <div class="product-panel fade">
+          <div class="product-copy">
+            <span class="eyebrow"><span class="eyebrow-dot"></span>knox-api.procd.cc</span>
+            <h2>Send code. Get output. That's it.</h2>
+            <p>One endpoint, one API key. Python, C, C++, Java, Go, and Rust, each with a real toolchain in a sandboxed container - capped at two minutes per run, every run logged.</p>
+            <a class="btn btn-secondary btn-lg" href="https://knox-api.procd.cc/account">Get an API key</a>
+            <div class="product-facts">
+              <div class="product-fact">
+                <strong>2 min</strong>
+                <span>hard cap per run</span>
+              </div>
+              <div class="product-fact">
+                <strong>6</strong>
+                <span>languages, real toolchains</span>
+              </div>
+              <div class="product-fact">
+                <strong>1</strong>
+                <span>account for both products</span>
+              </div>
+            </div>
+          </div>
+          <div class="code-panel fade-right">
+            <div class="code-panel-head">
+              <span class="code-panel-dot"></span><span class="code-panel-dot"></span><span class="code-panel-dot"></span>
+              <span class="code-panel-title">curl</span>
+            </div>
+            <pre><span class="tok-c"># python, with numpy/pandas/requests pre-installed</span>
+curl https://knox-api.procd.cc/v1/execute \
+  -H <span class="tok-str">"Authorization: Bearer knox_live_..."</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"language":"python","filename":"main.py","code":"print(1+1)"}'</span></pre>
+            <div class="code-panel-response">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 7-7"/></svg>
+              {"stdout":"2\n","exitCode":0,"durationMs":840}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="section-head fade">
+          <h2>Built to scale past a demo</h2>
+          <p>Every session and every execution gets its own isolated compute - no shared kernel, no noisy neighbors, whether it's one user or a whole team.</p>
+        </div>
+        <div class="scale-grid fade">
+          <div class="scale-card">
+            <strong>1:1</strong>
+            <p>One Fargate microVM per session or execution - not a shared container pool. Isolation doesn't degrade as usage grows.</p>
+          </div>
+          <div class="scale-card">
+            <strong>0</strong>
+            <p>Idle hosts. Nothing runs until a session or execution is actually requested, and it's torn down the moment it ends.</p>
+          </div>
+          <div class="scale-card">
+            <strong>&infin;</strong>
+            <p>Self-hosted, there's no session cap, no language limit, and no shared infrastructure to plan capacity around at all.</p>
+          </div>
+        </div>
+      </section>
+
       <section class="section" id="how-it-works">
         <div class="section-head fade">
-          <span class="eyebrow">how it works</span>
           <h2>One click, in the actual order of operations</h2>
         </div>
         <div class="steps fade">
           <div class="step">
-            <span>01</span>
+            <span>1</span>
             <h4>Sign in with a magic link</h4>
-            <p>An email with a one-click link - no password to set or remember, and no separate account for the API product.</p>
+            <p>An email with a one-click link - no password to set or remember, and one account for both products.</p>
           </div>
           <div class="step">
-            <span>02</span>
+            <span>2</span>
             <h4>Code, run, commit</h4>
             <p>A real container boots with VS Code already running - editor, terminal, Git, extensions, all server-side.</p>
           </div>
           <div class="step">
-            <span>03</span>
+            <span>3</span>
             <h4>15 minutes, then it's gone</h4>
             <p>The public demo tears the container down automatically. That's the trade-off for keeping it free.</p>
           </div>
           <div class="step">
-            <span>04</span>
+            <span>4</span>
             <h4>Self-host for the real thing</h4>
             <p>Same image, no timer, no language limit. <code>docker compose up</code> and it's yours, unrestricted.</p>
           </div>
@@ -1067,25 +1439,45 @@
       </section>
 
       <section class="section">
-        <div class="close fade">
+        <div class="close fade fade-scale">
           <h2>Real VS Code is one click away.</h2>
           <p>No installer, no password to remember.</p>
-          <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
+          <div class="hero-ctas">
+            <a class="btn btn-primary btn-lg" href="/app/" data-knox-open>Open Knox</a>
+            <a class="btn btn-secondary btn-lg" href="https://knox-api.procd.cc/account">Get an API key</a>
+          </div>
         </div>
       </section>
     </main>
 
     <footer>
-      <a class="brand" href="#top">
-        <svg viewBox="0 0 32 32" aria-hidden="true" width="18" height="18">
-          <rect width="32" height="32" rx="7" fill="#0e0f11" />
-          <text x="16" y="22.5" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="18" fill="#c1602f" text-anchor="middle">K</text>
-        </svg>
-        Knox
-      </a>
-      <div class="footer-links">
-        <a href="https://github.com/belphegor-s/knox">GitHub</a>
-        <span id="copyright"></span>
+      <div>
+        <a class="brand" href="#top">
+          <svg viewBox="0 0 32 32" aria-hidden="true" width="18" height="18">
+            <rect width="32" height="32" rx="7" fill="#0e0f11" />
+            <text x="16" y="22.5" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="18" fill="#c1602f" text-anchor="middle">K</text>
+          </svg>
+          Knox
+        </a>
+        <div class="footer-copyright"><span id="copyright"></span></div>
+      </div>
+      <div class="footer-cols">
+        <div class="footer-col">
+          <h5>Product</h5>
+          <a href="/app/" data-knox-open>Open Knox</a>
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How it works</a>
+        </div>
+        <div class="footer-col">
+          <h5>API</h5>
+          <a href="https://knox-api.procd.cc/account">Get an API key</a>
+          <a href="#api">What it does</a>
+        </div>
+        <div class="footer-col">
+          <h5>Self-host</h5>
+          <a href="https://github.com/belphegor-s/knox">Source on GitHub</a>
+          <a href="https://github.com/belphegor-s/knox#readme">Setup guide</a>
+        </div>
       </div>
     </footer>
 
