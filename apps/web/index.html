@@ -587,6 +587,9 @@
         padding: 22px 0 0;
         border-top: 1px solid var(--border);
       }
+      .product-fact {
+        text-align: center;
+      }
       .product-fact strong {
         display: block;
         font-family: var(--serif);
@@ -926,7 +929,32 @@
       }
       .knox-launch-error-actions {
         display: flex;
+        flex-direction: column;
+        align-items: flex-end;
         gap: 8px;
+        margin-top: 14px;
+      }
+      .knox-form {
+        margin: 0;
+      }
+      .knox-input {
+        width: 100%;
+        padding: 9px 12px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border-strong);
+        background: var(--bg-0);
+        color: var(--text-0);
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .knox-input:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+      .knox-launch-error .knox-success-text {
+        color: var(--success);
+        margin: 14px 0 0;
+        font-size: 13.5px;
       }
       @media (prefers-reduced-motion: reduce) {
         .knox-launch-dot,
@@ -1072,12 +1100,14 @@
         </div>
         <div class="knox-launch-error" id="knox-signin" hidden>
           <p>Sign in to start a session - no password, just a link emailed to you.</p>
-          <form id="knox-signin-form" style="display:flex; gap:8px;">
-            <input type="email" id="knox-signin-email" required placeholder="you@example.com" style="flex:1; padding:9px 12px; border-radius:var(--radius); border:1px solid var(--border-strong); background:var(--bg-0); color:var(--text-0); font-size:14px; font-family:inherit;" />
-            <button class="btn btn-primary" type="submit">Send link</button>
+          <form id="knox-signin-form" class="knox-form">
+            <input type="email" id="knox-signin-email" required placeholder="you@example.com" class="knox-input" />
+            <div class="knox-launch-error-actions">
+              <button class="btn btn-primary" type="submit">Send link</button>
+            </div>
           </form>
-          <p id="knox-signin-sent" hidden style="color:var(--success); margin:12px 0 0;">Check your email for a sign-in link, then come back and click Open Knox again.</p>
-          <div class="knox-launch-error-actions" style="margin-top:14px;">
+          <p id="knox-signin-sent" hidden class="knox-success-text">Check your email for a sign-in link, then come back and click Open Knox again.</p>
+          <div class="knox-launch-error-actions">
             <button class="btn btn-ghost" id="knox-signin-dismiss" type="button">Dismiss</button>
           </div>
         </div>
@@ -1119,6 +1149,7 @@
           <span class="lang-chip">Python</span>
           <span class="lang-chip">Node.js / TypeScript</span>
           <span class="lang-chip">Bun</span>
+          <span class="lang-chip">C++</span>
           <span class="lang-chip lang-chip--muted">+ any language, self-hosted</span>
         </div>
         <div class="shot fade">
