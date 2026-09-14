@@ -9,6 +9,10 @@ import { lookupActiveSession, stopSessionNow } from "./sessions.js";
 // untouched. Namespaced under /__knox/ so it can never collide with a real code-server asset path.
 const END_SESSION_PATH = "/__knox/end-session";
 
+// Where the countdown sends the browser once a session is over (naturally or via "End session") -
+// there's nothing left to look at on a torn-down container, so staying put just shows a dead page.
+const HOME_URL = process.env.KNOX_HOME_URL ?? "https://knox.procd.cc/";
+
 // Routed by SUBDOMAIN (<sessionId>.<KNOX_SESSION_DOMAIN>), not a URL path prefix - code-server
 // serves a full VS Code web app with hardcoded absolute asset paths (/stable-<hash>/out/...),
 // so proxying it under a shared-domain path would need real path-rewriting for every asset and
@@ -43,12 +47,25 @@ const COUNTDOWN_SCRIPT_BODY = `(function () {
   var el = document.getElementById("knox-session-countdown-time");
   var box = document.getElementById("knox-session-countdown");
   var endBtn = document.getElementById("knox-session-end");
+  // A message with nothing after it just leaves the user staring at a dead container - the
+  // whole point of ending is to send them somewhere that still does something.
   function ended(message) {
     box.innerHTML = "";
     box.textContent = message;
     box.style.color = "#ffb4a8";
     clearInterval(timer);
+    setTimeout(function () {
+      window.location.href = "${HOME_URL}";
+    }, 2500);
   }
+  endBtn.addEventListener("mouseenter", function () {
+    endBtn.style.background = "#ffffff26";
+    endBtn.style.borderColor = "#ffffff66";
+  });
+  endBtn.addEventListener("mouseleave", function () {
+    endBtn.style.background = "transparent";
+    endBtn.style.borderColor = "#ffffff40";
+  });
   function tick() {
     var remainingMs = expiresAt - Date.now();
     if (remainingMs <= 0) {
@@ -86,7 +103,7 @@ function countdownSnippet(expiresAtIso: string): { html: string; extraHashes: re
   const setExpiry = `window.__knoxExpiresAt=${JSON.stringify(expiresAtIso)};`;
   const setExpiryHash = `'sha256-${createHash("sha256").update(setExpiry, "utf8").digest("base64")}'`;
   return {
-    html: `<div id="knox-session-countdown" style="position:fixed;bottom:14px;right:14px;z-index:2147483647;display:flex;align-items:center;gap:10px;font:500 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:#1a1a1acc;color:#f2ede6;padding:7px 8px 7px 12px;border-radius:7px;border:1px solid #ffffff26;backdrop-filter:blur(6px);pointer-events:none;"><span>Knox session · <span id="knox-session-countdown-time">15:00</span></span><button id="knox-session-end" type="button" style="pointer-events:auto;cursor:pointer;font:inherit;background:transparent;border:1px solid #ffffff40;color:#f2ede6;border-radius:5px;padding:4px 9px;">End session</button></div>
+    html: `<div id="knox-session-countdown" style="position:fixed;bottom:14px;right:14px;z-index:2147483647;display:flex;align-items:center;gap:10px;font:500 12.5px ui-monospace,SFMono-Regular,Menlo,monospace;background:#1a1a1acc;color:#f2ede6;padding:7px 8px 7px 12px;border-radius:7px;border:1px solid #ffffff26;backdrop-filter:blur(6px);pointer-events:none;"><span>Knox session · <span id="knox-session-countdown-time">15:00</span></span><button id="knox-session-end" type="button" style="pointer-events:auto;cursor:pointer;font:inherit;background:transparent;border:1px solid #ffffff40;color:#f2ede6;border-radius:5px;padding:4px 9px;transition:background 0.15s ease,border-color 0.15s ease;">End session</button></div>
 <script>${setExpiry}</script>
 <script>${COUNTDOWN_SCRIPT_BODY}</script>`,
     extraHashes: [setExpiryHash, COUNTDOWN_SCRIPT_HASH],

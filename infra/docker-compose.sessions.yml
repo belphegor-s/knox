@@ -53,6 +53,7 @@ services:
       KNOX_ECS_SUBNETS: ${KNOX_ECS_SUBNETS}
       KNOX_VSCODE_SECURITY_GROUPS: ${KNOX_VSCODE_SECURITY_GROUPS}
       KNOX_SESSION_DOMAIN: ${KNOX_SESSION_DOMAIN:-procd.cc}
+      KNOX_HOME_URL: ${KNOX_HOME_URL:-https://knox.procd.cc/}
     ports:
       - "8083:8083"
     restart: unless-stopped
