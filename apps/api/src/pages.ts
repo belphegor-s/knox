@@ -85,7 +85,7 @@ const BASE_STYLE = `
   .modal-body { font-size: 13.5px; color: var(--text-2); line-height: 1.55; margin: 0; }
   .modal-body strong { color: var(--text-0); }
   .modal-error { font-size: 12.5px; color: var(--danger); margin: 12px 0 0; }
-  .modal-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-top: 18px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
 `;
 
 function brandHeader(): string {
@@ -208,8 +208,8 @@ curl https://knox-api.procd.cc/v1/execute \\
       <p class="modal-body">Revoke <strong id="revoke-key-name"></strong>? Anything using it will stop working immediately.</p>
       <p class="modal-error" id="revoke-error" hidden></p>
       <div class="modal-actions">
-        <button class="btn btn-danger-solid" type="button" id="revoke-confirm">Revoke key</button>
         <button class="btn btn-ghost" type="button" id="revoke-cancel">Cancel</button>
+        <button class="btn btn-danger-solid" type="button" id="revoke-confirm">Revoke key</button>
       </div>
     </div>
   </div>
