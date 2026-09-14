@@ -15,8 +15,22 @@ const POLL_INTERVAL_MS = 1_500;
 
 const REGION = process.env.AWS_REGION;
 const CLUSTER = process.env.KNOX_ECS_CLUSTER;
-const TASK_DEFINITION = process.env.KNOX_ECS_TASK_DEFINITION;
-const CONTAINER_NAME = process.env.KNOX_ECS_CONTAINER_NAME ?? "knox-runner";
+// One task definition (and one, much smaller, ECR image) per language instead of a single
+// ~1.9GB image bundling all six toolchains - verified against a real knox-execution task that
+// image pull alone was ~29s of a 73s total run for a trivial `print(1+1)`, the dominant cost by
+// far. A Python run has no reason to also pull Go, Rust, and Java it will never touch. "c" and
+// "cpp" share one image (gcc/g++ both come from the same build-essential package, so splitting
+// them further would just duplicate the identical toolchain under two names for nothing).
+const TASK_DEFINITION_PREFIX = process.env.KNOX_ECS_TASK_DEFINITION_PREFIX ?? "knox-runner";
+const CONTAINER_NAME_PREFIX = process.env.KNOX_ECS_CONTAINER_NAME_PREFIX ?? "knox-runner";
+const LANGUAGE_IMAGE_KEY: Record<string, string> = {
+  python: "python",
+  c: "c",
+  cpp: "c",
+  java: "java",
+  go: "go",
+  rust: "rust",
+};
 const SUBNETS = (process.env.KNOX_ECS_SUBNETS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const SECURITY_GROUPS = (process.env.KNOX_ECS_SECURITY_GROUPS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const ASSIGN_PUBLIC_IP = process.env.KNOX_ECS_ASSIGN_PUBLIC_IP !== "false";
@@ -57,11 +71,15 @@ async function readBody(body: unknown): Promise<string> {
  * (see infra/runner/knox-run's ECS branch), and results only become available once the task
  * has fully finished. Callers see one batched onOutput per stream, not a live stream. */
 export async function runOnFargate({ language, filename, code, onOutput, timeoutMs }: RunOptions): Promise<number> {
-  if (!CLUSTER || !TASK_DEFINITION || !CODE_BUCKET || SUBNETS.length === 0) {
+  if (!CLUSTER || !CODE_BUCKET || SUBNETS.length === 0) {
     throw new Error(
-      "ECS execution backend is misconfigured: KNOX_ECS_CLUSTER, KNOX_ECS_TASK_DEFINITION, KNOX_CODE_BUCKET, and KNOX_ECS_SUBNETS are all required.",
+      "ECS execution backend is misconfigured: KNOX_ECS_CLUSTER, KNOX_CODE_BUCKET, and KNOX_ECS_SUBNETS are all required.",
     );
   }
+  const imageKey = LANGUAGE_IMAGE_KEY[language];
+  if (!imageKey) throw new Error(`No ECS runner image configured for language: ${language}`);
+  const taskDefinition = `${TASK_DEFINITION_PREFIX}-${imageKey}`;
+  const containerName = `${CONTAINER_NAME_PREFIX}-${imageKey}`;
 
   const runTimeoutMs = timeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
   const id = randomUUID();
@@ -75,7 +93,7 @@ export async function runOnFargate({ language, filename, code, onOutput, timeout
     const runResult = await ecs().send(
       new RunTaskCommand({
         cluster: CLUSTER,
-        taskDefinition: TASK_DEFINITION,
+        taskDefinition,
         launchType: "FARGATE",
         count: 1,
         networkConfiguration: {
@@ -88,7 +106,7 @@ export async function runOnFargate({ language, filename, code, onOutput, timeout
         overrides: {
           containerOverrides: [
             {
-              name: CONTAINER_NAME,
+              name: containerName,
               command: [language, filename],
               environment: [
                 { name: "CODE_S3_URI", value: `s3://${CODE_BUCKET}/${srcKey}` },
