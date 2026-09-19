@@ -89,7 +89,7 @@ const BASE_STYLE = `
 `;
 
 function brandHeader(): string {
-  return `<a class="brand" href="https://knox.procd.cc/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#0e0f11"/><text x="16" y="22.5" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="18" fill="#c1602f" text-anchor="middle">K</text></svg> Knox API</a>`;
+  return `<a class="brand" href="https://knox.procd.cc/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0e0f11"/><path d="M11.5 12 16 16l-4.5 4" fill="none" stroke="#edeff1" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><rect x="19.5" y="9.8" width="2.1" height="12.4" rx="1.05" fill="#cf7038"/></svg> Knox API</a>`;
 }
 
 export function loginPageHtml(opts: { error?: string; sent?: boolean }): string {
