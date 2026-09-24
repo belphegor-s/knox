@@ -1,7 +1,8 @@
 # Cloud runtime
 
-Cloud execution (Python/C/C++/Java/Go/Rust) is real and implemented. Sync, collaboration, and
-auth below are still spec-only - see each section for what that means concretely.
+Cloud execution (Python/C/C++/Java/Go/Rust) and accounts (GitHub sign-in) are real and
+implemented. Sync and collaboration below are still spec-only - see each section for what that
+means concretely.
 
 ## Cloud execution (implemented)
 
@@ -77,9 +78,53 @@ Encrypted, resumable sync of workspace metadata and *selected* files - never a b
 
 CRDT-based, per SPEC section 16. Local editing stays authoritative when no collaborators are connected - a user who never collaborates pays zero overhead, which is why this isn't wired into the editor's hot path today even as a no-op.
 
-## Auth (specified, not implemented)
+## Accounts (implemented): GitHub sign-in
 
-Anonymous/local-only usage must never require an account (SPEC section 44) - this is already true today, trivially, since there's no auth system to bypass. Once built: OAuth/OIDC + GitHub login, short-lived sessions with refresh rotation, no secrets in `localStorage`.
+GitHub OAuth is the only sign-in method. `apps/api` owns accounts; everything else asks it.
+
+- **Flow.** `GET /auth/github?redirect=<url>` sets a short-lived `__Host-knox_oauth_state`
+  cookie (the `__Host-` prefix means no sibling `*.procd.cc` origin, including a user's own VS
+  Code session subdomain, can plant it) and redirects to GitHub. `GET /auth/github/callback`
+  checks the state, exchanges the code, reads `/user` and `/user/emails`, discards the GitHub
+  token, and sets `knox_session` (HttpOnly, Secure, SameSite=Lax, `Domain=KNOX_COOKIE_DOMAIN`).
+  Scopes are `read:user user:email` - never repository access.
+- **Identity.** Users are keyed on GitHub's numeric id. An account created before GitHub
+  sign-in existed (the old email magic links, now removed) is linked on first sign-in when
+  GitHub reports the same address as verified, so API keys and usage carry over.
+- **Redirects** after sign-in or sign-out only go to `https://` URLs on the cookie domain.
+- **What's gated:**
+  - VS Code sessions: `POST /api/sessions` on `apps/session-broker` needs a sign-in, and a
+    user with a session already running gets that session back instead of a second one.
+  - Every request to a running session (`<sessionId>.procd.cc`: HTTP, websockets, End
+    session) goes through `apps/session-broker/src/proxy.ts`, which only forwards it when the
+    sign-in belongs to the account that started the session. Signed-out page loads are sent to
+    GitHub sign-in and back; another account gets a 403. `knox_session` is stripped before the
+    request reaches code-server. The broker caches positive `/auth/whoami` answers for 60s
+    (code-server makes hundreds of requests per page load), so a sign-out takes up to a minute
+    to reach an already-open session tab.
+  - `/api/execute` (the in-browser IDE's `run`) needs a sign-in whenever `DATABASE_URL` is set.
+    Without a database there are no accounts, and it stays open behind its rate limit.
+  - `/app/` (the in-browser IDE) is gated by nginx `auth_request` when `KNOX_REQUIRE_AUTH=true`.
+  - `/account` and API-key management need a sign-in; `/v1/execute` needs an API key.
+  - The landing page stays public.
+- **Self-hosting** needs none of this: `KNOX_REQUIRE_AUTH` defaults to `false`, and the base
+  compose file runs without a database.
+
+### Environment
+
+| Service | Variable | Production value |
+| --- | --- | --- |
+| `api` | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | From the GitHub OAuth app |
+| `api` | `KNOX_API_PUBLIC_URL` | `https://knox-api.procd.cc` (the callback is `<this>/auth/github/callback`) |
+| `api` | `KNOX_COOKIE_DOMAIN` | `.procd.cc` |
+| `session-broker` | `KNOX_ACCOUNT_API_URL` | `https://knox-api.procd.cc` (server-to-server `/auth/whoami`) |
+| `session-broker` | `KNOX_ACCOUNT_PUBLIC_URL` | `https://knox-api.procd.cc` (where browsers go to sign in) |
+| `web` | `KNOX_REQUIRE_AUTH` | `true` |
+| `web` | `KNOX_SIGN_IN_URL` | `https://knox-api.procd.cc/auth/github` |
+
+The GitHub OAuth app (github.com/settings/developers, "OAuth Apps", not a GitHub App) needs the
+homepage URL `https://knox.procd.cc` and the callback URL
+`https://knox-api.procd.cc/auth/github/callback`, exactly.
 
 ## Why this is a separate document
 

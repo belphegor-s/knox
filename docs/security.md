@@ -32,6 +32,16 @@ Project contents are untrusted input - SPEC section 37/95 are explicit that this
 
 Beyond the initial asset load, the service worker's precache fetch, and requests a user explicitly configures (an AI provider endpoint), the app makes no runtime network calls - no telemetry, no analytics, no third-party call of any kind.
 
+### Accounts and hosted sessions
+
+GitHub OAuth sign-in, cookie scoping, and exactly what each service gates are documented in
+`docs/cloud-runtime.md` ("Accounts"). The security-relevant choices, in short: the OAuth state
+cookie is `__Host-`-prefixed so a sibling subdomain can't plant it; post-sign-in redirects are
+restricted to https on the cookie domain; the GitHub token is discarded after reading the
+profile; a VS Code session's URL grants nothing on its own, since the broker checks that each
+request's sign-in belongs to the session's owner; and Knox's session cookie is stripped before
+requests reach the user-controlled code-server container.
+
 ## What's specified but not built
 
 Real architectural requirements from `SPEC.md` the current codebase does not implement. Listed here so nobody mistakes their absence for "handled":
@@ -39,7 +49,7 @@ Real architectural requirements from `SPEC.md` the current codebase does not imp
 - **AI agent permissions** (section 22): the `AgentPermissions` type exists in `packages/shared/src/capabilities.ts` with sensible defaults (modify/run/delete all default to "ask", network defaults to "deny") - but there's no agent loop yet to gate, so nothing enforces it.
 - **AI patch safety / transactional apply** (section 97): specified, not built - there's no patch-proposal flow yet, only chat.
 - **Cloud execution isolation** (section 12/37): containers with CPU/memory/process/timeout/filesystem-quota/network-policy limits - not built; there's no cloud execution yet.
-- **Authentication** (section 44/84): not built - the app is local-only today, and per section 44, local-only users must never be forced to authenticate once cloud features exist either.
+
 
 ## Reporting
 

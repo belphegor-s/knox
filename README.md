@@ -20,6 +20,7 @@ This README describes what's actually implemented, what's scaffolded-but-honest-
 - Terminal (`packages/terminal`) - xterm.js over a worker-hosted shell, real readline-style line editing (cursor movement, word-jump/word-delete, kill-to-start/end, history, Tab completion for commands and paths - see `packages/terminal/src/view.tsx`), plus `run <file>`
 - Local JS/TS execution (`packages/runtime`) - runs in a disposable worker per call, TypeScript transpiled via the real TS compiler, output streamed, hard timeout
 - Cloud execution for Python/C/C++/Java/Go/Rust (`apps/api` + `apps/worker`) - `run <file>` in the terminal forwards to a real, sandboxed Docker container (network-isolated, read-only root fs, memory/CPU/pid-capped, non-root, timeout-enforced) when one of those languages' local runtime is unavailable; optional and additive - see `docs/cloud-runtime.md`. `run`'s language dispatch is by file extension, not a hardcoded JS/TS assumption
+- Accounts via GitHub sign-in (`apps/api`) - one sign-in gates hosted VS Code sessions (each reachable only by the account that started it), cloud `run`, the hosted in-browser IDE, and API keys; self-hosted deployments need none of it - see `docs/cloud-runtime.md` "Accounts"
 - Workspace search (`packages/search`) - runs in a worker, cancels stale requests, jump-to-line from results
 - AI chat (`packages/ai`) - real streaming chat (fetch + SSE) against OpenAI-compatible or Anthropic endpoints, BYO key stored only in this browser, a visible "AI Context" inspector, pattern-based secret redaction before anything reaches a provider
 - Service-worker precaching for instant, offline-capable repeat loads
@@ -30,7 +31,7 @@ This README describes what's actually implemented, what's scaffolded-but-honest-
 - AI agent loop, patch propose/apply, the AI permission model, model routing, Git/terminal-specific AI actions (commit messages, explain diff/failure) - the chat itself is real; these are the larger features built on top of it
 - Preview panel for web projects
 - LSP architecture for languages beyond TS/JS (syntax highlighting works; no diagnostics/go-to-def for Python/Rust/Go/C/C++ etc.)
-- Sync, collaboration, auth - described in `docs/cloud-runtime.md`, not implemented (cloud execution, in the same document, now is)
+- Sync, collaboration - described in `docs/cloud-runtime.md`, not implemented (cloud execution and GitHub sign-in, in the same document, now are)
 - WASM runtimes for Python/Rust/Go/C/C++ locally in the browser - these run via the cloud execution path above instead; no bundled WASM toolchain exists for them (see `packages/runtime/src/capabilities.ts`)
 
 Nothing above fakes functionality it doesn't have - every "not yet" surface says so explicitly instead of pretending. See the Roadmap section below.
@@ -53,7 +54,7 @@ Concretely, this means:
 ```
 /apps
   /web         React + Vite app shell - the IDE itself
-  /api         stateless, public-facing HTTP layer - implemented for cloud execution (POST /api/execute); auth/sync/AI-proxy routes still planned
+  /api         stateless, public-facing HTTP layer - cloud execution (POST /api/execute), GitHub sign-in, API keys; sync/AI-proxy routes still planned
   /worker      Docker-socket-privileged cloud execution worker - implemented; runs submitted code in a sandboxed container per request
 
 /packages
