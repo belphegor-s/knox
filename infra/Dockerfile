@@ -52,6 +52,11 @@ ENV KNOX_API_UPSTREAM=http://api:8081
 # reach anyone else's session broker. Only knox.procd.cc's own Coolify deployment overrides
 # this, to its own session-broker app's public URL.
 ENV KNOX_SESSION_API_UPSTREAM=
+# Sign-in gate for the in-browser IDE at /app/ (see nginx.conf's /__knox/auth) - off for a
+# self-hosted container, which has no account service to check against. knox.procd.cc sets
+# KNOX_REQUIRE_AUTH=true and points KNOX_SIGN_IN_URL at apps/api's public /auth/github.
+ENV KNOX_REQUIRE_AUTH=false
+ENV KNOX_SIGN_IN_URL=/
 
 # Coolify/most PaaS route by container port; 8080 avoids requiring root for port 80.
 EXPOSE 8080

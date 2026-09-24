@@ -76,6 +76,14 @@ services:
     environment:
       KNOX_WORKER_URL: http://worker:8082
       DATABASE_URL: postgres://knox:${POSTGRES_PASSWORD}@knox-account-db:5432/knox
+      # GitHub sign-in (the only sign-in method) - see docs/cloud-runtime.md "Accounts". The
+      # OAuth app's callback URL must be exactly ${KNOX_API_PUBLIC_URL}/auth/github/callback.
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      KNOX_API_PUBLIC_URL: ${KNOX_API_PUBLIC_URL:-}
+      # ".procd.cc" in production: one sign-in cookie for the landing page, this API, the
+      # in-browser IDE, and every <sessionId>.procd.cc VS Code session.
+      KNOX_COOKIE_DOMAIN: ${KNOX_COOKIE_DOMAIN:-}
     ports:
       - "8081:8081"
     restart: unless-stopped

@@ -54,6 +54,11 @@ services:
       KNOX_VSCODE_SECURITY_GROUPS: ${KNOX_VSCODE_SECURITY_GROUPS}
       KNOX_SESSION_DOMAIN: ${KNOX_SESSION_DOMAIN:-procd.cc}
       KNOX_HOME_URL: ${KNOX_HOME_URL:-https://knox.procd.cc/}
+      # apps/api, which owns accounts: KNOX_ACCOUNT_API_URL is where this service asks
+      # /auth/whoami (server to server), KNOX_ACCOUNT_PUBLIC_URL is where a signed-out browser
+      # is sent to sign in with GitHub. Without them every session request is refused.
+      KNOX_ACCOUNT_API_URL: ${KNOX_ACCOUNT_API_URL:-https://knox-api.procd.cc}
+      KNOX_ACCOUNT_PUBLIC_URL: ${KNOX_ACCOUNT_PUBLIC_URL:-https://knox-api.procd.cc}
     ports:
       - "8083:8083"
     restart: unless-stopped
