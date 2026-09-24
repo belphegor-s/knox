@@ -17,7 +17,7 @@ export interface ApiKeySummary {
 }
 
 /** Returns the full key exactly once - only its hash and a short display prefix are ever
- * persisted, matching how the magic-link tokens and session tokens are stored. */
+ * persisted, matching how session tokens are stored. */
 export async function createApiKey(userId: string, name: string): Promise<{ id: string; key: string }> {
   const secret = randomBytes(24).toString("base64url");
   const key = `${KEY_PREFIX}${secret}`;

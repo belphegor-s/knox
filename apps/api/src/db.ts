@@ -11,12 +11,16 @@ const SCHEMA = `
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
 
-  CREATE TABLE IF NOT EXISTS magic_links (
-    token_hash TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    expires_at TIMESTAMPTZ NOT NULL,
-    used_at TIMESTAMPTZ
-  );
+  -- GitHub is the only sign-in method. ALTERs rather than a fresh CREATE so already-deployed
+  -- databases pick these up; email stays NOT NULL (a verified GitHub address, or GitHub's own
+  -- noreply form when the account exposes none) so accounts created by the old email sign-in
+  -- can be linked by address on their first GitHub sign-in - see auth.ts's upsertGithubUser.
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS github_id BIGINT UNIQUE;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS github_login TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT;
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+  -- Magic-link sign-in was removed; its one-time tokens have nothing left to redeem them.
+  DROP TABLE IF EXISTS magic_links;
 
   CREATE TABLE IF NOT EXISTS sessions (
     token_hash TEXT PRIMARY KEY,

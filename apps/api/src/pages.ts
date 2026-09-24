@@ -1,5 +1,6 @@
 import type { ApiKeySummary } from "./api-keys.js";
 import type { UsageSummary } from "./usage.js";
+import type { Account } from "./auth.js";
 
 function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -39,7 +40,7 @@ const BASE_STYLE = `
   .card { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
   .card h2 { font-size: 15px; font-weight: 600; color: var(--text-0); margin: 0 0 14px; }
   label { display: block; font-size: 12.5px; color: var(--text-2); margin-bottom: 6px; }
-  input[type="email"], input[type="text"] { width: 100%; height: var(--control-h); padding: 0 12px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--bg-0); color: var(--text-0); font-size: 14px; font-family: inherit; transition: border-color 0.15s ease; }
+  input[type="text"] { width: 100%; height: var(--control-h); padding: 0 12px; border-radius: var(--radius); border: 1px solid var(--border-strong); background: var(--bg-0); color: var(--text-0); font-size: 14px; font-family: inherit; transition: border-color 0.15s ease; }
   input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
   input:disabled { opacity: 0.6; }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: var(--control-h); font-size: 13.5px; font-weight: 600; padding: 0 16px; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; text-decoration: none; font-family: inherit; transition: opacity 0.15s ease, border-color 0.15s ease, background 0.15s ease; }
@@ -75,6 +76,11 @@ const BASE_STYLE = `
   .msg { font-size: 13px; padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; }
   .msg-error { background: rgba(193, 80, 47, 0.12); color: var(--danger); border: 1px solid rgba(193, 80, 47, 0.3); }
   .msg-success { background: rgba(143, 179, 122, 0.12); color: var(--success); border: 1px solid rgba(143, 179, 122, 0.3); }
+  .identity { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+  .identity h1 { margin: 0 0 2px; }
+  .identity .sub { margin: 0; }
+  .identity .sub strong { color: var(--text-0); font-weight: 600; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--border-strong); flex-shrink: 0; }
   .footer-link { color: var(--text-2); font-size: 13px; }
 
   /* ---- modal: same visual language as the launch overlay on the marketing site ---- */
@@ -92,59 +98,32 @@ function brandHeader(): string {
   return `<a class="brand" href="https://knox.procd.cc/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#0e0f11"/><path d="M11.5 12 16 16l-4.5 4" fill="none" stroke="#edeff1" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/><rect x="19.5" y="9.8" width="2.1" height="12.4" rx="1.05" fill="#cf7038"/></svg> Knox API</a>`;
 }
 
-export function loginPageHtml(opts: { error?: string; sent?: boolean }): string {
+const GITHUB_MARK = `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>`;
+
+export function loginPageHtml(opts: { signInUrl: string; error?: string }): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Sign in - Knox API</title>${FONT_LINKS}<style>${BASE_STYLE}</style></head>
 <body><div class="wrap">
   ${brandHeader()}
   <h1>Sign in</h1>
-  <p class="sub">Get an API key to run code from your own scripts and apps - Python, C, C++, Java, Go, and Rust, with a 2-minute execution cap per run.</p>
+  <p class="sub">Get an API key to run code from your own scripts and apps - Python, C, C++, Java, Go, and Rust, with a 2-minute execution cap per run. One GitHub sign-in covers this and hosted VS Code sessions.</p>
   ${opts.error ? `<div class="msg msg-error">${escapeHtml(opts.error)}</div>` : ""}
-  ${
-    opts.sent
-      ? `<div class="msg msg-success">Check your email for a sign-in link. It expires in 15 minutes.</div>`
-      : `<div class="card">
-    <form id="login-form">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" required placeholder="you@example.com" />
-      <div style="margin-top: 14px;"><button class="btn btn-primary" type="submit">Send sign-in link</button></div>
-    </form>
+  <div class="card">
+    <a class="btn btn-primary" id="github-signin" href="${escapeHtml(opts.signInUrl)}">${GITHUB_MARK}Continue with GitHub</a>
+    <p class="key-meta" style="margin:14px 0 0;">Knox reads your public profile and verified email. It never asks for repository access.</p>
   </div>
   <script>
-    document.getElementById("login-form").addEventListener("submit", function (e) {
-      e.preventDefault();
-      var input = document.getElementById("email");
-      var email = input.value;
-      var btn = e.target.querySelector("button");
-      var originalLabel = btn.textContent;
-      btn.disabled = true;
-      input.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Sending...';
-      fetch("/auth/request-link", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email }) })
-        .then(function (r) { return r.json().then(function (body) { return { ok: r.ok, body: body }; }); })
-        .then(function (result) {
-          if (result.ok) {
-            window.location.href = "/account?sent=1";
-            return;
-          }
-          btn.disabled = false;
-          input.disabled = false;
-          btn.textContent = originalLabel;
-          window.location.href = "/account?error=" + encodeURIComponent((result.body && result.body.error) || "Could not send the link. Try again.");
-        })
-        .catch(function () {
-          btn.disabled = false;
-          input.disabled = false;
-          btn.textContent = originalLabel;
-          window.location.href = "/account?error=" + encodeURIComponent("Could not send the link. Try again.");
-        });
+    document.getElementById("github-signin").addEventListener("click", function (e) {
+      var btn = e.currentTarget;
+      btn.setAttribute("aria-disabled", "true");
+      btn.style.pointerEvents = "none";
+      btn.innerHTML = '<span class="spinner"></span>Redirecting to GitHub...';
     });
-  </script>`
-  }
+  </script>
 </div></body></html>`;
 }
 
-export function dashboardPageHtml(opts: { email: string; keys: ApiKeySummary[]; usage: UsageSummary; mintedKey?: string; error?: string }): string {
+export function dashboardPageHtml(opts: { account: Account; keys: ApiKeySummary[]; usage: UsageSummary; mintedKey?: string; error?: string }): string {
   const keyRows = opts.keys.length
     ? opts.keys
         .map((k) => {
@@ -170,8 +149,13 @@ export function dashboardPageHtml(opts: { email: string; keys: ApiKeySummary[]; 
     ${brandHeader()}
     <form method="POST" action="/auth/logout"><button class="btn btn-ghost" type="submit">Sign out</button></form>
   </div>
-  <h1>${escapeHtml(opts.email)}</h1>
-  <p class="sub">Signed in.</p>
+  <div class="identity">
+    ${opts.account.avatarUrl ? `<img class="avatar" src="${escapeHtml(opts.account.avatarUrl)}" alt="" width="44" height="44" />` : ""}
+    <div>
+      <h1>${escapeHtml(opts.account.name ?? opts.account.githubLogin ?? opts.account.email)}</h1>
+      <p class="sub">${opts.account.githubLogin ? `Signed in with GitHub as <strong>@${escapeHtml(opts.account.githubLogin)}</strong>` : `Signed in as ${escapeHtml(opts.account.email)}`}</p>
+    </div>
+  </div>
   ${opts.error ? `<div class="msg msg-error">${escapeHtml(opts.error)}</div>` : ""}
   ${opts.mintedKey ? `<div class="msg msg-success">API key created - copy it now, it won't be shown again.<div class="new-key-box">${escapeHtml(opts.mintedKey)}</div></div>` : ""}
 

@@ -2,18 +2,25 @@ import express from "express";
 import { isRateLimited, pruneRateLimitState } from "./rate-limit.js";
 import { initSchema } from "./db.js";
 import {
-  createMagicLink,
-  consumeMagicLink,
+  beginGithubSignIn,
+  checkOauthState,
+  clearOauthStateCookieHeader,
+  fetchGithubProfile,
+  upsertGithubUser,
+  isGithubConfigured,
   createSession,
   resolveSession,
   destroySession,
+  pruneExpiredAuthState,
   parseCookies,
   sessionCookieHeader,
   clearSessionCookieHeader,
   sanitizeRedirectTarget,
+  isTrustedOrigin,
   SESSION_COOKIE_NAME,
+  OAUTH_STATE_COOKIE_NAME,
+  type Account,
 } from "./auth.js";
-import { sendMagicLinkEmail } from "./email.js";
 import { createApiKey, listApiKeys, revokeApiKey, resolveApiKey } from "./api-keys.js";
 import { assertWithinUsageCaps, logExecution, getUsageSummary, UsageLimitError } from "./usage.js";
 import { loginPageHtml, dashboardPageHtml } from "./pages.js";
@@ -52,7 +59,7 @@ function sessionTokenFrom(req: express.Request): string | undefined {
   return parseCookies(req.headers.cookie)[SESSION_COOKIE_NAME];
 }
 
-async function requireSession(req: express.Request, res: express.Response): Promise<{ userId: string; email: string } | null> {
+async function requireSession(req: express.Request, res: express.Response): Promise<Account | null> {
   const session = await resolveSession(sessionTokenFrom(req));
   if (!session) {
     res.status(401).json({ error: "Not signed in." });
@@ -61,94 +68,111 @@ async function requireSession(req: express.Request, res: express.Response): Prom
   return session;
 }
 
-// ---- account: magic-link auth + dashboard --------------------------------------------------
+// ---- account: GitHub sign-in + dashboard ----------------------------------------------------
 
-// Only /auth/request-link needs CORS: it's the one route a browser on a *different* procd.cc
-// subdomain (knox.procd.cc's own sign-in prompt, gating VS Code sessions the same way as API
-// keys) calls directly. Everything else either renders its own page (same-origin navigation,
-// no CORS involved) or is called server-to-server (session-broker's /auth/whoami check, which
-// browsers never touch and CORS doesn't apply to anyway).
-const COOKIE_DOMAIN_SUFFIX = (process.env.KNOX_COOKIE_DOMAIN ?? "").replace(/^\./, "");
-app.post("/auth/request-link", (req, res, next) => {
-  const origin = req.header("origin");
-  if (origin && COOKIE_DOMAIN_SUFFIX) {
-    try {
-      const host = new URL(origin).hostname;
-      if (host === COOKIE_DOMAIN_SUFFIX || host.endsWith(`.${COOKIE_DOMAIN_SUFFIX}`)) {
-        res.setHeader("Access-Control-Allow-Origin", origin);
-        res.setHeader("Vary", "Origin");
-      }
-    } catch {
-      /* not a valid Origin header - no CORS header set, browser blocks the response as usual */
-    }
-  }
-  next();
-});
-app.options("/auth/request-link", (req, res) => {
-  const origin = req.header("origin");
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Methods", "POST");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  }
-  res.status(204).end();
-});
+// The OAuth callback URL has to match what's registered on the GitHub OAuth app byte for byte,
+// so it comes from configuration rather than being rebuilt from the request - behind Traefik/
+// Cloudflare, req.protocol is "http" and would silently produce a mismatched redirect_uri.
+function publicBaseUrl(req: express.Request): string {
+  return (process.env.KNOX_API_PUBLIC_URL ?? `${req.protocol}://${req.get("host")}`).replace(/\/$/, "");
+}
 
-app.post("/auth/request-link", async (req, res) => {
-  const email = typeof req.body?.email === "string" ? req.body.email.trim() : "";
-  const redirect = typeof req.body?.redirect === "string" ? req.body.redirect : undefined;
-  if (!email || !email.includes("@") || email.length > 320) {
-    res.status(400).json({ error: "Enter a valid email address." });
+function signInErrorRedirect(target: string, message: string): string {
+  const url = new URL(target);
+  url.searchParams.set("auth_error", message);
+  return url.toString();
+}
+
+app.get("/auth/github", (req, res) => {
+  const base = publicBaseUrl(req);
+  const redirect = sanitizeRedirectTarget(typeof req.query.redirect === "string" ? req.query.redirect : undefined, `${base}/account`);
+  if (!isGithubConfigured()) {
+    res.status(503).send("GitHub sign-in isn't configured on this deployment (GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET).");
     return;
   }
-  if (isRateLimited(`magic-link:${email.toLowerCase()}`, 5, 15 * 60_000)) {
-    res.status(429).json({ error: "Too many sign-in requests for this email. Try again later." });
+  const { authorizeUrl, stateCookie } = beginGithubSignIn(`${base}/auth/github/callback`, redirect);
+  res.setHeader("Set-Cookie", stateCookie);
+  res.setHeader("Cache-Control", "no-store");
+  res.redirect(authorizeUrl);
+});
+
+app.get("/auth/github/callback", async (req, res) => {
+  const base = publicBaseUrl(req);
+  const fallback = `${base}/account`;
+  const state = checkOauthState(parseCookies(req.headers.cookie)[OAUTH_STATE_COOKIE_NAME], typeof req.query.state === "string" ? req.query.state : undefined);
+  res.setHeader("Set-Cookie", clearOauthStateCookieHeader());
+  res.setHeader("Cache-Control", "no-store");
+  if (!state) {
+    res.redirect(signInErrorRedirect(fallback, "That sign-in attempt expired or didn't start here. Try again."));
+    return;
+  }
+  const redirect = sanitizeRedirectTarget(state.redirect, fallback);
+  if (typeof req.query.error === "string") {
+    // access_denied is the user clicking Cancel on GitHub's consent screen - not an error worth
+    // shouting about, but still worth saying why they're back without being signed in.
+    res.redirect(signInErrorRedirect(redirect, req.query.error === "access_denied" ? "GitHub sign-in was cancelled." : "GitHub sign-in failed. Try again."));
+    return;
+  }
+  const code = typeof req.query.code === "string" ? req.query.code : "";
+  if (!code) {
+    res.redirect(signInErrorRedirect(redirect, "GitHub sign-in failed. Try again."));
     return;
   }
   try {
-    const token = await createMagicLink(email);
-    const safeRedirect = sanitizeRedirectTarget(redirect, `${req.protocol}://${req.get("host")}/account`);
-    const verifyUrl = `${req.protocol}://${req.get("host")}/auth/verify?token=${encodeURIComponent(token)}&redirect=${encodeURIComponent(safeRedirect)}`;
-    await sendMagicLinkEmail(email, verifyUrl);
-    res.status(200).json({ ok: true });
+    const profile = await fetchGithubProfile(code, `${base}/auth/github/callback`);
+    const userId = await upsertGithubUser(profile);
+    const { token, expiresAt } = await createSession(userId);
+    res.setHeader("Set-Cookie", [clearOauthStateCookieHeader(), sessionCookieHeader(token, expiresAt)]);
+    res.redirect(redirect);
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error("Failed to send magic link:", err);
-    res.status(503).json({ error: "Could not send the sign-in email right now. Try again in a moment." });
+    console.error("GitHub sign-in failed:", err);
+    res.redirect(signInErrorRedirect(redirect, "GitHub sign-in failed. Try again."));
   }
 });
 
-app.get("/auth/verify", async (req, res) => {
-  const token = typeof req.query.token === "string" ? req.query.token : "";
-  const redirectTarget = typeof req.query.redirect === "string" ? req.query.redirect : undefined;
-  const userId = token ? await consumeMagicLink(token) : null;
-  const fallback = `${req.protocol}://${req.get("host")}/account`;
-  if (!userId) {
-    const target = new URL(sanitizeRedirectTarget(redirectTarget, fallback));
-    target.searchParams.set("error", "That sign-in link is invalid or has expired.");
-    res.redirect(target.toString());
+// Service-to-service (session-broker forwards the cookie it received to decide whether to
+// allow a VS Code session; infra/nginx.conf's auth_request gate for /app/ does the same) - no
+// CORS, a browser has no reason to call this directly. /auth/me below is the browser's version.
+app.get("/auth/whoami", async (req, res) => {
+  const session = await resolveSession(sessionTokenFrom(req));
+  res.setHeader("Cache-Control", "no-store");
+  if (!session) {
+    res.status(401).json({ error: "Not signed in." });
     return;
   }
-  const { token: sessionToken, expiresAt } = await createSession(userId);
-  res.setHeader("Set-Cookie", sessionCookieHeader(sessionToken, expiresAt));
-  res.redirect(sanitizeRedirectTarget(redirectTarget, fallback));
+  res.status(200).json({ userId: session.userId, email: session.email, login: session.githubLogin });
 });
 
-// Service-to-service only (session-broker forwards the cookie it received here to decide
-// whether to allow a VS Code session) - never called by a browser directly, so no CORS.
-app.get("/auth/whoami", async (req, res) => {
+// The landing page (knox.procd.cc, a different origin) reads this to show who's signed in.
+// Credentialed CORS, so the allowed origin has to be echoed exactly - never "*" - and only for
+// https origins on the cookie domain. Deliberately omits the internal user id.
+app.use("/auth/me", (req, res, next) => {
+  const origin = req.header("origin");
+  if (origin && isTrustedOrigin(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
+app.get("/auth/me", async (req, res) => {
   const session = await resolveSession(sessionTokenFrom(req));
   if (!session) {
     res.status(401).json({ error: "Not signed in." });
     return;
   }
-  res.status(200).json({ userId: session.userId, email: session.email });
+  res.status(200).json({ login: session.githubLogin, name: session.name, email: session.email, avatarUrl: session.avatarUrl });
 });
 
-app.post("/auth/logout", async (req, res) => {
+// A plain form POST from either the account page or the landing page (same-site, so the Lax
+// session cookie is sent) - `redirect` lets the landing page's own Sign out land back on itself.
+app.post("/auth/logout", express.urlencoded({ extended: false, limit: "4kb" }), async (req, res) => {
   await destroySession(sessionTokenFrom(req));
   res.setHeader("Set-Cookie", clearSessionCookieHeader());
-  res.redirect("/account");
+  const redirect = typeof req.body?.redirect === "string" ? req.body.redirect : undefined;
+  res.redirect(303, sanitizeRedirectTarget(redirect, "/account"));
 });
 
 app.get("/account", async (req, res) => {
@@ -156,8 +180,8 @@ app.get("/account", async (req, res) => {
   if (!session) {
     res.status(200).send(
       loginPageHtml({
-        sent: req.query.sent === "1",
-        error: typeof req.query.error === "string" ? req.query.error : undefined,
+        signInUrl: `/auth/github?redirect=${encodeURIComponent(`${publicBaseUrl(req)}/account`)}`,
+        error: typeof req.query.auth_error === "string" ? req.query.auth_error : undefined,
       }),
     );
     return;
@@ -165,7 +189,7 @@ app.get("/account", async (req, res) => {
   const [keys, usage] = await Promise.all([listApiKeys(session.userId), getUsageSummary(session.userId)]);
   res.status(200).send(
     dashboardPageHtml({
-      email: session.email,
+      account: session,
       keys,
       usage,
       mintedKey: typeof req.query.minted === "string" ? req.query.minted : undefined,
@@ -297,10 +321,22 @@ app.post("/v1/execute", async (req, res) => {
   res.status(upstream.ok ? 200 : upstream.status).json({ stdout, stderr, exitCode, durationMs });
 });
 
-// This is the one public route that runs arbitrary user code (by forwarding to the sandboxed
-// worker) - rate-limited per client on top of the worker's own per-request resource caps.
+// The route the in-browser IDE's `run` command uses (same-origin via infra/nginx.conf's /api/
+// proxy, which forwards the browser's cookies unchanged). It runs arbitrary user code, so once
+// accounts exist on this deployment it requires a signed-in session like everything else; a
+// database-less self-hosted deployment has no accounts to check and keeps it open, relying on
+// the per-client rate limit on top of the worker's own per-request resource caps.
 app.post("/api/execute", async (req, res) => {
-  if (isRateLimited(req.ip ?? "unknown", EXECUTE_LIMIT_PER_MINUTE, 60_000)) {
+  let rateLimitKey = req.ip ?? "unknown";
+  if (HAS_DATABASE) {
+    const session = await resolveSession(sessionTokenFrom(req));
+    if (!session) {
+      res.status(401).json({ error: "Sign in at knox.procd.cc to run code in the cloud." });
+      return;
+    }
+    rateLimitKey = `user:${session.userId}`;
+  }
+  if (isRateLimited(rateLimitKey, EXECUTE_LIMIT_PER_MINUTE, 60_000)) {
     res.status(429).json({ error: "Too many execution requests. Try again in a minute." });
     return;
   }
@@ -357,6 +393,14 @@ app.use(async (req, res) => {
 });
 
 setInterval(() => pruneRateLimitState(60_000), 60_000).unref();
+if (HAS_DATABASE) {
+  setInterval(() => {
+    pruneExpiredAuthState().catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("Failed to prune expired sessions:", err);
+    });
+  }, 60 * 60_000).unref();
+}
 
 const port = Number(process.env.PORT) || 8081;
 (HAS_DATABASE ? initSchema() : Promise.resolve())
