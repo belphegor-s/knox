@@ -103,6 +103,9 @@ importers:
       '@knox/terminal':
         specifier: workspace:*
         version: link:../../packages/terminal
+      '@paper-design/shaders':
+        specifier: 0.0.81
+        version: 0.0.81
       lucide-react:
         specifier: 0.469.0
         version: 0.469.0(react@18.3.1)
@@ -1296,6 +1299,9 @@ packages:
     engines: {node: ^22.20 || ^24.12 || >=25}
     cpu: [x64]
     os: [linux]
+
+  '@paper-design/shaders@0.0.81':
+    resolution: {integrity: sha512-jeGdyjMscZ2bxmQdo8lhwUufHUf4iq3s1ayjh8PXU7Go42Rw8E3I0It1FZdc3HuWt5J82m//DRWaxsRqRfA4Gg==}
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -4347,6 +4353,8 @@ snapshots:
 
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
+
+  '@paper-design/shaders@0.0.81': {}
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 

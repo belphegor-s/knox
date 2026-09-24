@@ -14,31 +14,32 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@knox/shared": "workspace:*",
-    "@knox/filesystem": "workspace:*",
-    "@knox/editor": "workspace:*",
-    "@knox/git": "workspace:*",
-    "@knox/terminal": "workspace:*",
-    "@knox/search": "workspace:*",
     "@knox/ai": "workspace:*",
+    "@knox/editor": "workspace:*",
+    "@knox/filesystem": "workspace:*",
+    "@knox/git": "workspace:*",
+    "@knox/search": "workspace:*",
+    "@knox/shared": "workspace:*",
+    "@knox/terminal": "workspace:*",
+    "@paper-design/shaders": "0.0.81",
+    "lucide-react": "0.469.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "zustand": "5.0.15",
     "react-window": "1.8.11",
-    "lucide-react": "0.469.0",
     "workbox-precaching": "7.4.1",
-    "workbox-routing": "7.4.1"
+    "workbox-routing": "7.4.1",
+    "zustand": "5.0.15"
   },
   "devDependencies": {
+    "@testing-library/react": "16.3.3",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
     "@types/react-window": "1.8.8",
     "@vitejs/plugin-react": "4.7.0",
+    "jsdom": "25.0.1",
     "typescript": "5.9.3",
     "vite": "5.4.21",
     "vite-plugin-pwa": "0.20.5",
-    "vitest": "2.1.9",
-    "jsdom": "25.0.1",
-    "@testing-library/react": "16.3.3"
+    "vitest": "2.1.9"
   }
 }
