@@ -1,7 +1,7 @@
 import express from "express";
 import { createServer } from "node:http";
 import { initSchema, pool } from "./db.js";
-import { createSession, reapExpiredSessions, SessionLimitError } from "./sessions.js";
+import { createSession, findActiveSessionForUser, reapExpiredSessions, SessionLimitError, type SessionRecord } from "./sessions.js";
 import { proxyHttpRequest, proxyUpgrade } from "./proxy.js";
 import { resolveAccount } from "./account-auth.js";
 
@@ -12,12 +12,21 @@ app.get("/health", (_req, res) => {
   res.status(200).send("ok");
 });
 
-// "Open Knox" now requires signing in - the same magic-link account apps/api issues API keys
-// under (see apps/session-broker/src/account-auth.ts: the two services share a cookie domain,
-// so one sign-in gates both products). Identity for the abuse caps below stays (real client
-// IP, FingerprintJS visitor id) as a second layer on top of the account itself - see
+// "Open Knox" requires a GitHub sign-in on apps/api (see account-auth.ts: the two services share
+// a cookie domain, so one sign-in gates both products), and proxy.ts re-checks that same sign-in,
+// plus ownership, on every request to the session itself. Identity for the abuse caps below
+// stays (real client IP, FingerprintJS visitor id) as a second layer on top of the account - see
 // docs/cloud-runtime.md for why this stands in for TLS/JA3 fingerprinting, which needs a
 // Cloudflare plan this project isn't paying for.
+function sessionResponse(session: SessionRecord): { sessionId: string; url: string | null; expiresAt: string } {
+  const domain = process.env.KNOX_SESSION_DOMAIN;
+  return {
+    sessionId: session.id,
+    url: domain ? `https://${session.id}.${domain}/` : null,
+    expiresAt: session.expiresAt.toISOString(),
+  };
+}
+
 app.post("/api/sessions", async (req, res) => {
   const account = await resolveAccount(req.headers.cookie);
   if (!account) {
@@ -33,13 +42,13 @@ app.post("/api/sessions", async (req, res) => {
   }
 
   try {
+    const running = await findActiveSessionForUser(account.userId);
+    if (running) {
+      res.status(200).json({ ...sessionResponse(running), resumed: true });
+      return;
+    }
     const session = await createSession(ip, fingerprintId, account.userId);
-    const domain = process.env.KNOX_SESSION_DOMAIN;
-    res.status(201).json({
-      sessionId: session.id,
-      url: domain ? `https://${session.id}.${domain}/` : null,
-      expiresAt: session.expiresAt.toISOString(),
-    });
+    res.status(201).json(sessionResponse(session));
   } catch (err) {
     if (err instanceof SessionLimitError) {
       res.status(429).json({ error: err.message });

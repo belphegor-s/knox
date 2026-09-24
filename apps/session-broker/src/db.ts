@@ -24,6 +24,9 @@ const SCHEMA = `
   -- gate now, but the fingerprint/IP check stays as a second layer against one account being
   -- used to spin up sessions from many different browsers at once.
   ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_id TEXT;
+  -- The proxy checks ownership on every request and "Open Knox" looks up a user's running
+  -- session, both by user_id.
+  CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id, started_at);
 `;
 
 export async function initSchema(): Promise<void> {

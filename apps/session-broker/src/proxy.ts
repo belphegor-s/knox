@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import { lookupActiveSession, stopSessionNow } from "./sessions.js";
+import { resolveAccount, signInUrl, stripSessionCookie } from "./account-auth.js";
 
 // The one path this proxy answers itself instead of forwarding to code-server - code-server has
 // no such endpoint, and every other path under a session's subdomain is meant to reach it
@@ -149,21 +150,87 @@ export function extractSessionId(host: string | undefined, sessionDomain: string
   return bareHost.slice(0, -(sessionDomain.length + 1));
 }
 
-async function resolveSession(host: string | undefined): Promise<{ target: string; expiresAt: string } | null> {
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+type Authorization =
+  | { kind: "not-a-session" }
+  | { kind: "sign-in" }
+  | { kind: "forbidden" }
+  | { kind: "ok"; sessionId: string; target: string; expiresAt: string };
+
+/** The gate in front of every VS Code session: the request must carry a Knox sign-in, and that
+ * account must be the one that started this session. A session's URL alone grants nothing - it
+ * ends up in browser history, screenshots, and shared screens, and a session subdomain serves
+ * user-controlled content (code-server's /proxy/<port>/), so letting anyone else's browser load
+ * it would also hand that content a same-site foothold against the visitor. */
+export async function authorizeSessionRequest(host: string | undefined, cookieHeader: string | undefined): Promise<Authorization> {
   const sessionId = extractSessionId(host, SESSION_DOMAIN);
-  if (!sessionId) return null;
+  if (!sessionId || !UUID_RE.test(sessionId)) return { kind: "not-a-session" };
   const session = await lookupActiveSession(sessionId);
-  return session ? { target: `http://${session.publicIp}:8080`, expiresAt: session.expiresAt.toISOString() } : null;
+  if (!session) return { kind: "not-a-session" };
+  const account = await resolveAccount(cookieHeader);
+  if (!account) return { kind: "sign-in" };
+  // Sessions started before sign-in was required have no owner - nobody can prove it's theirs.
+  if (!session.userId || session.userId !== account.userId) return { kind: "forbidden" };
+  return { kind: "ok", sessionId, target: `http://${session.publicIp}:8080`, expiresAt: session.expiresAt.toISOString() };
+}
+
+function isNavigation(req: IncomingMessage): boolean {
+  const mode = req.headers["sec-fetch-mode"];
+  if (typeof mode === "string") return mode === "navigate";
+  return (req.method === "GET" || req.method === "HEAD") && (req.headers.accept ?? "").includes("text/html");
+}
+
+function noticePage(title: string, body: string): string {
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${title} - Knox</title>
+<style>:root{color-scheme:dark light}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0c0e;color:#d8dadd;font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+@media (prefers-color-scheme: light){body{background:#f4f2ef;color:#24262b}}main{max-width:420px;padding:24px}h1{font-size:19px;margin:0 0 8px}p{margin:0 0 20px;opacity:.75}
+a{display:inline-block;background:#c1602f;color:#fff6f0;text-decoration:none;font-weight:600;font-size:14px;padding:9px 16px;border-radius:6px}</style></head>
+<body><main><h1>${title}</h1><p>${body}</p><a href="${HOME_URL}">Back to Knox</a></main></body></html>`;
+}
+
+/** Answers a request that didn't pass authorizeSessionRequest. Returns false when the host isn't
+ * a live session at all, so the caller can fall through to the broker's own routes. */
+function rejectHttp(auth: Authorization, req: IncomingMessage, res: ServerResponse): boolean {
+  if (auth.kind === "not-a-session" || auth.kind === "ok") return false;
+  res.setHeader("Cache-Control", "no-store");
+  if (auth.kind === "sign-in") {
+    const target = signInUrl(`https://${req.headers.host}${req.url ?? "/"}`);
+    if (target && isNavigation(req)) {
+      res.writeHead(302, { Location: target });
+      res.end();
+      return true;
+    }
+    res.writeHead(401, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Sign in to use this session." }));
+    return true;
+  }
+  if (isNavigation(req)) {
+    res.writeHead(403, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(noticePage("This isn't your session", "Each Knox session belongs to the account that started it. Start your own from the Knox home page."));
+    return true;
+  }
+  res.writeHead(403, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ error: "This session belongs to another account." }));
+  return true;
+}
+
+function forwardWithoutKnoxCookie(req: IncomingMessage): void {
+  const stripped = stripSessionCookie(req.headers.cookie);
+  if (stripped) req.headers.cookie = stripped;
+  else delete req.headers.cookie;
 }
 
 export async function proxyHttpRequest(req: IncomingMessage, res: ServerResponse): Promise<boolean> {
-  const sessionId = extractSessionId(req.headers.host, SESSION_DOMAIN);
-  if (sessionId && req.method === "POST" && (req.url ?? "").split("?")[0] === END_SESSION_PATH) {
+  const auth = await authorizeSessionRequest(req.headers.host, req.headers.cookie);
+  if (auth.kind !== "ok") return rejectHttp(auth, req, res);
+
+  if (req.method === "POST" && (req.url ?? "").split("?")[0] === END_SESSION_PATH) {
     try {
-      await stopSessionNow(sessionId);
+      await stopSessionNow(auth.sessionId);
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error(`Failed to end session ${sessionId} on request:`, err);
+      console.error(`Failed to end session ${auth.sessionId} on request:`, err);
       res.writeHead(502, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Could not end the session. It will still stop on its own at the time limit." }));
       return true;
@@ -173,23 +240,26 @@ export async function proxyHttpRequest(req: IncomingMessage, res: ServerResponse
     return true;
   }
 
-  const resolved = await resolveSession(req.headers.host);
-  if (!resolved) return false;
-
+  forwardWithoutKnoxCookie(req);
   const isRootDocument = req.url === "/" || (req.url ?? "").startsWith("/?");
   if (isRootDocument) {
-    (req as CountdownRequest).__knoxExpiresAt = resolved.expiresAt;
+    (req as CountdownRequest).__knoxExpiresAt = auth.expiresAt;
     // Force an uncompressed response so the countdown injection above can safely treat the
     // proxied body as plain UTF-8 text instead of needing to detect and decompress gzip/br.
     req.headers["accept-encoding"] = "identity";
   }
-  proxy.web(req, res, { target: resolved.target, selfHandleResponse: isRootDocument });
+  proxy.web(req, res, { target: auth.target, selfHandleResponse: isRootDocument });
   return true;
 }
 
 export async function proxyUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer): Promise<boolean> {
-  const resolved = await resolveSession(req.headers.host);
-  if (!resolved) return false;
-  proxy.ws(req, socket, head, { target: resolved.target });
+  const auth = await authorizeSessionRequest(req.headers.host, req.headers.cookie);
+  if (auth.kind === "not-a-session") return false;
+  if (auth.kind !== "ok") {
+    socket.end(auth.kind === "sign-in" ? "HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n" : "HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
+    return true;
+  }
+  forwardWithoutKnoxCookie(req);
+  proxy.ws(req, socket, head, { target: auth.target });
   return true;
 }

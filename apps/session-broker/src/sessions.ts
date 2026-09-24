@@ -43,6 +43,30 @@ export async function getDailyUsageMs(ip: string, fingerprintId: string): Promis
   return Number(rows[0]?.total ?? 0);
 }
 
+async function getUserDailyUsageMs(userId: string): Promise<number> {
+  const { rows } = await pool.query<{ total: string | null }>(
+    `SELECT SUM(EXTRACT(EPOCH FROM (COALESCE(stopped_at, expires_at) - started_at)) * 1000) AS total
+     FROM sessions
+     WHERE user_id = $1 AND started_at >= date_trunc('day', now())`,
+    [userId],
+  );
+  return Number(rows[0]?.total ?? 0);
+}
+
+/** A user who clicks "Open Knox" again (a second tab, a reload of the landing page) while their
+ * session is still running gets sent back to that session rather than an error - it's theirs,
+ * and a second container would only burn the same daily budget twice. */
+export async function findActiveSessionForUser(userId: string): Promise<SessionRecord | null> {
+  const { rows } = await pool.query<{ id: string; public_ip: string; expires_at: Date }>(
+    `SELECT id, public_ip, expires_at FROM sessions
+     WHERE user_id = $1 AND stopped_at IS NULL AND expires_at > now()
+     ORDER BY started_at DESC LIMIT 1`,
+    [userId],
+  );
+  const row = rows[0];
+  return row ? { id: row.id, publicIp: row.public_ip, expiresAt: row.expires_at } : null;
+}
+
 async function hasActiveSession(ip: string, fingerprintId: string): Promise<boolean> {
   const { rows } = await pool.query(
     `SELECT 1 FROM sessions WHERE ip = $1 AND fingerprint_id = $2 AND stopped_at IS NULL AND expires_at > now() LIMIT 1`,
@@ -78,7 +102,10 @@ export async function createSession(ip: string, fingerprintId: string, userId: s
     throw new Error("Session broker is misconfigured: KNOX_ECS_CLUSTER, KNOX_VSCODE_TASK_DEFINITION, and KNOX_ECS_SUBNETS are all required.");
   }
 
-  const usedMs = await getDailyUsageMs(ip, fingerprintId);
+  // The daily budget is charged to the account AND to the (ip, fingerprint) pair, whichever has
+  // used more - one account can't reset it by switching browsers, and one browser can't reset it
+  // by switching GitHub accounts.
+  const usedMs = Math.max(await getDailyUsageMs(ip, fingerprintId), await getUserDailyUsageMs(userId));
   if (usedMs >= DAILY_CAP_MS) {
     throw new SessionLimitError("Daily coding time limit reached (30 minutes). Try again tomorrow, or self-host Knox for unrestricted use.");
   }
@@ -92,11 +119,11 @@ export async function createSession(ip: string, fingerprintId: string, userId: s
   // password submitted through its own login form (a cookie, set server-side), not a URL
   // query string - there is no code-server-supported way to hand a generated password to a
   // browser and land it already logged in. Access control for a session instead comes from
-  // the network: the security group on this task allows inbound 8080 from ONLY the broker's
-  // own host, so a browser can never reach code-server directly no matter what it knows -
-  // every request is forced through this proxy, gated on knowing this session's unguessable
-  // (UUIDv4) id. vscode-entrypoint.sh falls back to --auth none whenever PASSWORD is unset,
-  // which is exactly what self-hosted sessions already run with.
+  // two layers: the network (the security group on this task allows inbound 8080 from ONLY
+  // the broker's own host, so a browser can never reach code-server directly) and the proxy
+  // (proxy.ts only forwards a request whose Knox sign-in resolves to the account that started
+  // this session - knowing the session's URL is not enough). vscode-entrypoint.sh falls back to
+  // --auth none whenever PASSWORD is unset, which is exactly what self-hosted sessions run with.
   const run = await ecs.send(
     new RunTaskCommand({
       cluster: CLUSTER,
@@ -127,12 +154,12 @@ export async function createSession(ip: string, fingerprintId: string, userId: s
   return { id, publicIp, expiresAt };
 }
 
-export async function lookupActiveSession(id: string): Promise<{ publicIp: string; expiresAt: Date } | null> {
-  const { rows } = await pool.query<{ public_ip: string; expires_at: Date }>(
-    `SELECT public_ip, expires_at FROM sessions WHERE id = $1 AND stopped_at IS NULL AND expires_at > now()`,
+export async function lookupActiveSession(id: string): Promise<{ publicIp: string; expiresAt: Date; userId: string | null } | null> {
+  const { rows } = await pool.query<{ public_ip: string; expires_at: Date; user_id: string | null }>(
+    `SELECT public_ip, expires_at, user_id FROM sessions WHERE id = $1 AND stopped_at IS NULL AND expires_at > now()`,
     [id],
   );
-  return rows[0] ? { publicIp: rows[0].public_ip, expiresAt: rows[0].expires_at } : null;
+  return rows[0] ? { publicIp: rows[0].public_ip, expiresAt: rows[0].expires_at, userId: rows[0].user_id } : null;
 }
 
 /** Actually enforces the 15-minute cap - nothing inside the container can be trusted to
