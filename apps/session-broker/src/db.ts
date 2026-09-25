@@ -27,6 +27,27 @@ const SCHEMA = `
   -- The proxy checks ownership on every request and "Open Knox" looks up a user's running
   -- session, both by user_id.
   CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id, started_at);
+  -- Tracking for the admin overview (see overview.ts): who (by GitHub login, for display -
+  -- this service has no user table), how long the container took to become reachable, and why
+  -- the session ended ("expired" by the reaper, or "ended" by the user).
+  ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_login TEXT;
+  ALTER TABLE sessions ADD COLUMN IF NOT EXISTS boot_ms INTEGER;
+  ALTER TABLE sessions ADD COLUMN IF NOT EXISTS end_reason TEXT;
+  CREATE INDEX IF NOT EXISTS sessions_started_idx ON sessions (started_at);
+  -- Every launch attempt, not just the ones that became a session: a request that hit a limit
+  -- or failed to boot leaves no sessions row, and those are exactly the numbers worth watching.
+  CREATE TABLE IF NOT EXISTS session_events (
+    id BIGSERIAL PRIMARY KEY,
+    kind TEXT NOT NULL,
+    user_id TEXT,
+    user_login TEXT,
+    session_id TEXT,
+    detail TEXT,
+    duration_ms INTEGER,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS session_events_time_idx ON session_events (created_at);
+  CREATE INDEX IF NOT EXISTS session_events_kind_time_idx ON session_events (kind, created_at);
 `;
 
 export async function initSchema(): Promise<void> {

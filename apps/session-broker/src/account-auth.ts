@@ -16,6 +16,8 @@ export interface Account {
   userId: string;
   email: string;
   login: string | null;
+  // Decided by apps/api (KNOX_ADMIN_GITHUB_IDS) - this service just trusts its answer.
+  isAdmin: boolean;
 }
 
 // Every VS Code asset, websocket, and extension-host request passes through the proxy - a cold
@@ -72,9 +74,9 @@ export async function resolveAccount(cookieHeader: string | undefined): Promise<
       cache.delete(key);
       return null;
     }
-    const body = (await res.json()) as { userId?: string; email?: string; login?: string | null };
+    const body = (await res.json()) as { userId?: string; email?: string; login?: string | null; isAdmin?: boolean };
     if (!body.userId || !body.email) return null;
-    const account: Account = { userId: body.userId, email: body.email, login: body.login ?? null };
+    const account: Account = { userId: body.userId, email: body.email, login: body.login ?? null, isAdmin: body.isAdmin === true };
     if (cache.size >= CACHE_MAX_ENTRIES) {
       const now = Date.now();
       for (const [k, v] of cache) if (v.expiresAt <= now) cache.delete(k);

@@ -3,6 +3,7 @@ import { RunTaskCommand, DescribeTasksCommand, StopTaskCommand } from "@aws-sdk/
 import { DescribeNetworkInterfacesCommand } from "@aws-sdk/client-ec2";
 import { ecs, ec2 } from "./ecs.js";
 import { pool } from "./db.js";
+import { recordEvent } from "./events.js";
 
 // Two independent caps, both enforced here: 15 minutes per session (SESSION_DURATION_MS) and
 // 30 cumulative minutes per (ip, fingerprint) per calendar day (DAILY_CAP_MS) - a session is
@@ -21,7 +22,16 @@ const CONTAINER_NAME = process.env.KNOX_VSCODE_CONTAINER_NAME ?? "knox-vscode";
 const SUBNETS = (process.env.KNOX_ECS_SUBNETS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 const SECURITY_GROUPS = (process.env.KNOX_VSCODE_SECURITY_GROUPS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
 
-export class SessionLimitError extends Error {}
+export const DAILY_CAP_MINUTES = DAILY_CAP_MS / 60_000;
+
+export class SessionLimitError extends Error {
+  constructor(
+    message: string,
+    readonly limit: "daily" | "active",
+  ) {
+    super(message);
+  }
+}
 
 export interface SessionRecord {
   id: string;
@@ -97,7 +107,21 @@ async function waitForPublicIp(taskArn: string): Promise<string> {
   }
 }
 
-export async function createSession(ip: string, fingerprintId: string, userId: string): Promise<SessionRecord> {
+/** Minutes actually spent in sessions today (a running session counts up to now, not to its
+ * expiry) - what a user sees as "used today". The cap check above deliberately counts a running
+ * session's whole granted length instead, since that time is already spoken for. */
+export async function getUserUsageToday(userId: string): Promise<number> {
+  const { rows } = await pool.query<{ total: string | null }>(
+    `SELECT SUM(EXTRACT(EPOCH FROM (LEAST(COALESCE(stopped_at, expires_at), now()) - started_at)) * 1000) AS total
+     FROM sessions
+     WHERE user_id = $1 AND started_at >= date_trunc('day', now())`,
+    [userId],
+  );
+  return Math.max(0, Number(rows[0]?.total ?? 0));
+}
+
+export async function createSession(ip: string, fingerprintId: string, user: { userId: string; login: string | null }): Promise<SessionRecord> {
+  const userId = user.userId;
   if (!CLUSTER || !TASK_DEFINITION || SUBNETS.length === 0) {
     throw new Error("Session broker is misconfigured: KNOX_ECS_CLUSTER, KNOX_VSCODE_TASK_DEFINITION, and KNOX_ECS_SUBNETS are all required.");
   }
@@ -107,13 +131,14 @@ export async function createSession(ip: string, fingerprintId: string, userId: s
   // by switching GitHub accounts.
   const usedMs = Math.max(await getDailyUsageMs(ip, fingerprintId), await getUserDailyUsageMs(userId));
   if (usedMs >= DAILY_CAP_MS) {
-    throw new SessionLimitError("Daily coding time limit reached (30 minutes). Try again tomorrow, or self-host Knox for unrestricted use.");
+    throw new SessionLimitError("Daily coding time limit reached (30 minutes). Try again tomorrow, or self-host Knox for unrestricted use.", "daily");
   }
   if (await hasActiveSession(ip, fingerprintId)) {
-    throw new SessionLimitError("A session is already running for this browser.");
+    throw new SessionLimitError("A session is already running for this browser.", "active");
   }
 
   const id = randomUUID();
+  const launchStartedAt = Date.now();
 
   // No PASSWORD override here on purpose: code-server's --auth password mode needs the
   // password submitted through its own login form (a cookie, set server-side), not a URL
@@ -142,14 +167,25 @@ export async function createSession(ip: string, fingerprintId: string, userId: s
   const taskArn = run.tasks?.[0]?.taskArn;
   if (!taskArn) throw new Error("ECS RunTask returned no task ARN");
 
-  const publicIp = await waitForPublicIp(taskArn);
+  let publicIp: string;
+  try {
+    publicIp = await waitForPublicIp(taskArn);
+  } catch (err) {
+    // The task was started but never became reachable - stop it rather than leave it billing
+    // with no sessions row pointing at it for the reaper to find.
+    await ecs.send(new StopTaskCommand({ cluster: CLUSTER, task: taskArn, reason: "Knox: session never became reachable" })).catch(() => {});
+    recordEvent("failed", { userId, userLogin: user.login, detail: err instanceof Error ? err.message : String(err), durationMs: Date.now() - launchStartedAt });
+    throw err;
+  }
+  const bootMs = Date.now() - launchStartedAt;
   const remainingTodayMs = DAILY_CAP_MS - usedMs;
   const expiresAt = new Date(Date.now() + Math.min(SESSION_DURATION_MS, remainingTodayMs));
 
   await pool.query(
-    `INSERT INTO sessions (id, ip, fingerprint_id, user_id, task_arn, public_ip, expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [id, ip, fingerprintId, userId, taskArn, publicIp, expiresAt],
+    `INSERT INTO sessions (id, ip, fingerprint_id, user_id, user_login, task_arn, public_ip, expires_at, boot_ms) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [id, ip, fingerprintId, userId, user.login, taskArn, publicIp, expiresAt, bootMs],
   );
+  recordEvent("started", { userId, userLogin: user.login, sessionId: id, durationMs: bootMs });
 
   return { id, publicIp, expiresAt };
 }
@@ -174,8 +210,8 @@ export async function lookupActiveSession(id: string): Promise<{ publicIp: strin
  * already exited, or a bad/expired ARN) is fine to mark stopped; anything else is left
  * unmarked so the next tick, 30s later, tries again. */
 export async function reapExpiredSessions(): Promise<void> {
-  const { rows } = await pool.query<{ id: string; task_arn: string }>(
-    `SELECT id, task_arn FROM sessions WHERE stopped_at IS NULL AND expires_at <= now()`,
+  const { rows } = await pool.query<{ id: string; task_arn: string; user_id: string | null; user_login: string | null }>(
+    `SELECT id, task_arn, user_id, user_login FROM sessions WHERE stopped_at IS NULL AND expires_at <= now()`,
   );
   for (const row of rows) {
     try {
@@ -189,7 +225,10 @@ export async function reapExpiredSessions(): Promise<void> {
       }
       // Already stopped/gone by some other path - nothing left to do, fall through to mark it.
     }
-    await pool.query(`UPDATE sessions SET stopped_at = now() WHERE id = $1`, [row.id]);
+    // stopped_at is the moment it was stopped, not the moment it expired - capped at expiry so a
+    // reaper running late (a redeploy, a slow tick) never inflates the minutes it's charged for.
+    await pool.query(`UPDATE sessions SET stopped_at = LEAST(now(), expires_at), end_reason = 'expired' WHERE id = $1`, [row.id]);
+    recordEvent("ended", { userId: row.user_id, userLogin: row.user_login, sessionId: row.id, detail: "expired" });
   }
 }
 
@@ -199,8 +238,8 @@ export async function reapExpiredSessions(): Promise<void> {
  * false only when the session was already stopped/expired (nothing to do), letting the caller
  * distinguish "already over" from a real failure worth surfacing. */
 export async function stopSessionNow(id: string): Promise<boolean> {
-  const { rows } = await pool.query<{ task_arn: string }>(
-    `SELECT task_arn FROM sessions WHERE id = $1 AND stopped_at IS NULL`,
+  const { rows } = await pool.query<{ task_arn: string; user_id: string | null; user_login: string | null }>(
+    `SELECT task_arn, user_id, user_login FROM sessions WHERE id = $1 AND stopped_at IS NULL`,
     [id],
   );
   const row = rows[0];
@@ -211,7 +250,8 @@ export async function stopSessionNow(id: string): Promise<boolean> {
   } catch (err) {
     if (await isTaskStillRunning(row.task_arn)) throw err;
   }
-  await pool.query(`UPDATE sessions SET stopped_at = now() WHERE id = $1`, [id]);
+  await pool.query(`UPDATE sessions SET stopped_at = now(), end_reason = 'ended' WHERE id = $1`, [id]);
+  recordEvent("ended", { userId: row.user_id, userLogin: row.user_login, sessionId: id, detail: "ended" });
   return true;
 }
 

@@ -1,7 +1,17 @@
 import express from "express";
 import { createServer } from "node:http";
 import { initSchema, pool } from "./db.js";
-import { createSession, findActiveSessionForUser, reapExpiredSessions, SessionLimitError, type SessionRecord } from "./sessions.js";
+import {
+  createSession,
+  findActiveSessionForUser,
+  getUserUsageToday,
+  reapExpiredSessions,
+  SessionLimitError,
+  DAILY_CAP_MINUTES,
+  type SessionRecord,
+} from "./sessions.js";
+import { recordEvent } from "./events.js";
+import { getSessionsOverview } from "./overview.js";
 import { proxyHttpRequest, proxyUpgrade } from "./proxy.js";
 import { resolveAccount } from "./account-auth.js";
 
@@ -41,22 +51,71 @@ app.post("/api/sessions", async (req, res) => {
     return;
   }
 
+  const who = { userId: account.userId, userLogin: account.login };
+  recordEvent("requested", who);
   try {
     const running = await findActiveSessionForUser(account.userId);
     if (running) {
+      recordEvent("resumed", { ...who, sessionId: running.id });
       res.status(200).json({ ...sessionResponse(running), resumed: true });
       return;
     }
-    const session = await createSession(ip, fingerprintId, account.userId);
+    const session = await createSession(ip, fingerprintId, { userId: account.userId, login: account.login });
     res.status(201).json(sessionResponse(session));
   } catch (err) {
     if (err instanceof SessionLimitError) {
+      recordEvent(err.limit === "daily" ? "limit_daily" : "limit_active", who);
       res.status(429).json({ error: err.message });
       return;
     }
     // eslint-disable-next-line no-console
     console.error("Failed to create session:", err);
     res.status(503).json({ error: "Could not start a session right now. Try again in a moment." });
+  }
+});
+
+// The signed-in user's own numbers, for the landing page's account menu: minutes used today
+// against the daily cap, and the session they can jump back into if one is still running.
+app.get("/api/sessions/me", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const account = await resolveAccount(req.headers.cookie);
+  if (!account) {
+    res.status(401).json({ error: "Not signed in." });
+    return;
+  }
+  try {
+    const [running, usedMs] = await Promise.all([findActiveSessionForUser(account.userId), getUserUsageToday(account.userId)]);
+    res.status(200).json({
+      active: running ? sessionResponse(running) : null,
+      usedTodayMinutes: Math.round((usedMs / 60_000) * 10) / 10,
+      dailyCapMinutes: DAILY_CAP_MINUTES,
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Failed to load session usage:", err);
+    res.status(503).json({ error: "Could not load usage right now." });
+  }
+});
+
+// The VS Code half of the admin overview (knox.procd.cc/admin/) - see overview.ts. Reached the
+// same way as POST /api/sessions: through knox.procd.cc's nginx, so it's same-origin for the page.
+app.get("/api/sessions/admin/overview", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  const account = await resolveAccount(req.headers.cookie);
+  if (!account) {
+    res.status(401).json({ error: "Not signed in." });
+    return;
+  }
+  if (!account.isAdmin) {
+    res.status(403).json({ error: "Your account isn't an admin on this deployment." });
+    return;
+  }
+  try {
+    res.status(200).json(await getSessionsOverview());
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Failed to build sessions overview:", err);
+    res.status(500).json({ error: "Could not load VS Code session numbers." });
   }
 });
 
