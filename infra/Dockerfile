@@ -45,6 +45,7 @@ COPY --from=build /repo/apps/web/dist /usr/share/nginx/html
 # variables are conventionally uppercase, so envsubst (which substitutes by variable NAME) never
 # touches them as long as nothing uppercase happens to collide.
 COPY infra/nginx.conf /etc/nginx/templates/default.conf.template
+COPY infra/nginx-headers.conf /etc/nginx/snippets/knox-headers.conf
 ENV KNOX_API_UPSTREAM=http://api:8081
 # Empty by default on purpose: a self-hosted instance has no session broker deployed at all
 # (self-hosting already means unrestricted, direct access to the `vscode` service - see
