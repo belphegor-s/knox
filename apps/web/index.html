@@ -714,6 +714,27 @@
           display: none;
         }
       }
+      /* On a phone the 2.3:1 box is shorter than ten lines of code and narrower than the
+         longest one, so size the window to its content instead and wrap long lines under a
+         hanging indent that keeps the line-number gutter clear. */
+      @media (max-width: 640px) {
+        .shot {
+          aspect-ratio: auto;
+          min-height: 0;
+        }
+        .mock-code {
+          font-size: 11.5px;
+        }
+        .mock-line {
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          padding: 0 14px 0 38px;
+          text-indent: -24px;
+        }
+        .mock-ln {
+          text-indent: 0;
+        }
+      }
 
       /* ---------- sections ---------- */
       .section {
@@ -937,7 +958,6 @@
       .card-shot {
         margin: -28px -28px 18px;
         border-bottom: 1px solid var(--border);
-        aspect-ratio: 3 / 1;
         overflow: hidden;
       }
 
