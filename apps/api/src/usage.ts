@@ -13,9 +13,9 @@ export class UsageLimitError extends Error {}
 
 async function countSince(userId: string, since: "day" | "month"): Promise<number> {
   const { rows } = await pool.query<{ count: string }>(
-    `SELECT COUNT(*) AS count FROM executions e
-     JOIN api_keys k ON k.id = e.api_key_id
-     WHERE k.user_id = $1 AND e.created_at >= date_trunc($2, now())`,
+    // Only API-key runs count toward the API caps - IDE runs have their own per-minute limit.
+    `SELECT COUNT(*) AS count FROM executions
+     WHERE user_id = $1 AND source = 'api' AND created_at >= date_trunc($2, now())`,
     [userId, since],
   );
   return Number(rows[0]?.count ?? 0);
@@ -31,14 +31,20 @@ export async function assertWithinUsageCaps(userId: string): Promise<void> {
   }
 }
 
-export async function logExecution(apiKeyId: string, language: string, exitCode: number | null, durationMs: number): Promise<void> {
-  await pool.query("INSERT INTO executions (id, api_key_id, language, exit_code, duration_ms) VALUES ($1, $2, $3, $4, $5)", [
-    randomUUID(),
-    apiKeyId,
-    language,
-    exitCode,
-    durationMs,
-  ]);
+export type ExecutionSource = "api" | "ide";
+
+export async function logExecution(entry: {
+  userId: string;
+  apiKeyId: string | null;
+  source: ExecutionSource;
+  language: string;
+  exitCode: number | null;
+  durationMs: number;
+}): Promise<void> {
+  await pool.query(
+    "INSERT INTO executions (id, api_key_id, user_id, source, language, exit_code, duration_ms) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+    [randomUUID(), entry.apiKeyId, entry.userId, entry.source, entry.language, entry.exitCode, Math.round(entry.durationMs)],
+  );
 }
 
 export interface UsageSummary {

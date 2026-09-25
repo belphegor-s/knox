@@ -24,6 +24,7 @@ import {
 import { createApiKey, listApiKeys, revokeApiKey, resolveApiKey } from "./api-keys.js";
 import { assertWithinUsageCaps, logExecution, getUsageSummary, UsageLimitError } from "./usage.js";
 import { loginPageHtml, dashboardPageHtml } from "./pages.js";
+import { getApiOverview } from "./overview.js";
 import { isSupportedLanguage, validateFilename } from "./languages.js";
 
 const app = express();
@@ -47,7 +48,7 @@ app.get("/health", (_req, res) => {
 // that's the base deployment, and it should never start failing because of a feature nobody
 // asked for. So this is opt-in on DATABASE_URL being set, not a hard requirement at boot.
 const HAS_DATABASE = Boolean(process.env.DATABASE_URL);
-app.use(["/auth", "/account", "/v1"], (_req, res, next) => {
+app.use(["/auth", "/account", "/admin", "/v1"], (_req, res, next) => {
   if (!HAS_DATABASE) {
     res.status(503).json({ error: "This deployment doesn't have the account/API-key feature configured." });
     return;
@@ -141,13 +142,13 @@ app.get("/auth/whoami", async (req, res) => {
     res.status(401).json({ error: "Not signed in." });
     return;
   }
-  res.status(200).json({ userId: session.userId, email: session.email, login: session.githubLogin });
+  res.status(200).json({ userId: session.userId, email: session.email, login: session.githubLogin, isAdmin: session.isAdmin });
 });
 
-// The landing page (knox.procd.cc, a different origin) reads this to show who's signed in.
-// Credentialed CORS, so the allowed origin has to be echoed exactly - never "*" - and only for
-// https origins on the cookie domain. Deliberately omits the internal user id.
-app.use("/auth/me", (req, res, next) => {
+// Read from knox.procd.cc (a different origin): /auth/me by the landing page to show who's
+// signed in, /admin/* by the overview page. Credentialed CORS, so the allowed origin has to be
+// echoed exactly - never "*" - and only for https origins on the cookie domain.
+app.use(["/auth/me", "/admin"], (req, res, next) => {
   const origin = req.header("origin");
   if (origin && isTrustedOrigin(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -163,7 +164,25 @@ app.get("/auth/me", async (req, res) => {
     res.status(401).json({ error: "Not signed in." });
     return;
   }
-  res.status(200).json({ login: session.githubLogin, name: session.name, email: session.email, avatarUrl: session.avatarUrl });
+  res.status(200).json({ login: session.githubLogin, name: session.name, email: session.email, avatarUrl: session.avatarUrl, isAdmin: session.isAdmin });
+});
+
+// The account/API half of the admin overview - see overview.ts. Admins are listed by GitHub id
+// in KNOX_ADMIN_GITHUB_IDS; a signed-in non-admin gets 403, not 404, so the page can say so.
+app.get("/admin/overview", async (req, res) => {
+  const session = await requireSession(req, res);
+  if (!session) return;
+  if (!session.isAdmin) {
+    res.status(403).json({ error: "Your account isn't an admin on this deployment." });
+    return;
+  }
+  try {
+    res.status(200).json(await getApiOverview());
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Failed to build overview:", err);
+    res.status(500).json({ error: "Could not load account and API numbers." });
+  }
 });
 
 // A plain form POST from either the account page or the landing page (same-site, so the Lax
@@ -313,7 +332,7 @@ app.post("/v1/execute", async (req, res) => {
   }
 
   const durationMs = Date.now() - startedAt;
-  await logExecution(apiKey.id, language, exitCode, durationMs).catch((err: unknown) => {
+  await logExecution({ userId: apiKey.userId, apiKeyId: apiKey.id, source: "api", language, exitCode, durationMs }).catch((err: unknown) => {
     // eslint-disable-next-line no-console
     console.error("Failed to log execution:", err);
   });
@@ -328,12 +347,14 @@ app.post("/v1/execute", async (req, res) => {
 // the per-client rate limit on top of the worker's own per-request resource caps.
 app.post("/api/execute", async (req, res) => {
   let rateLimitKey = req.ip ?? "unknown";
+  let userId: string | null = null;
   if (HAS_DATABASE) {
     const session = await resolveSession(sessionTokenFrom(req));
     if (!session) {
       res.status(401).json({ error: "Sign in at knox.procd.cc to run code in the cloud." });
       return;
     }
+    userId = session.userId;
     rateLimitKey = `user:${session.userId}`;
   }
   if (isRateLimited(rateLimitKey, EXECUTE_LIMIT_PER_MINUTE, 60_000)) {
@@ -341,6 +362,7 @@ app.post("/api/execute", async (req, res) => {
     return;
   }
 
+  const startedAt = Date.now();
   let upstream: Response;
   try {
     upstream = await fetch(`${WORKER_URL}/execute`, {
@@ -353,6 +375,7 @@ app.post("/api/execute", async (req, res) => {
     return;
   }
 
+  const language = typeof req.body?.language === "string" ? req.body.language.slice(0, 32) : "unknown";
   res.status(upstream.status);
   res.setHeader("Content-Type", upstream.headers.get("content-type") ?? "application/json");
   // Without this, Express holds these headers until the first res.write() below - which for a
@@ -366,14 +389,39 @@ app.post("/api/execute", async (req, res) => {
     res.end();
     return;
   }
+  // Passed through to the browser unchanged as it arrives; the exit event is also picked out
+  // of the NDJSON on the way past, so the run can be logged with its result.
   const reader = upstream.body.getReader();
   const decoder = new TextDecoder();
+  let pending = "";
+  let exitCode: number | null = null;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
-    res.write(decoder.decode(value, { stream: true }));
+    const text = decoder.decode(value, { stream: true });
+    res.write(text);
+    pending += text;
+    let newlineIndex: number;
+    while ((newlineIndex = pending.indexOf("\n")) !== -1) {
+      const line = pending.slice(0, newlineIndex);
+      pending = pending.slice(newlineIndex + 1);
+      if (!line.includes('"exit"')) continue;
+      try {
+        const event = JSON.parse(line) as { type?: string; code?: number };
+        if (event.type === "exit") exitCode = event.code ?? null;
+      } catch {
+        /* not an event line - nothing to record */
+      }
+    }
   }
   res.end();
+
+  if (userId && upstream.ok) {
+    await logExecution({ userId, apiKeyId: null, source: "ide", language, exitCode, durationMs: Date.now() - startedAt }).catch((err: unknown) => {
+      // eslint-disable-next-line no-console
+      console.error("Failed to log execution:", err);
+    });
+  }
 });
 
 // Catch-all: any request that didn't match a route above. A signed-in user hitting a dead or

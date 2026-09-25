@@ -50,6 +50,18 @@ const SCHEMA = `
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS executions_key_time_idx ON executions (api_key_id, created_at);
+
+  -- Tracking for the admin overview (see overview.ts). Executions from the in-browser IDE's
+  -- \`run\` (/api/execute) carry no API key, so rows are attributed to a user directly and
+  -- tagged with where they came from; old rows are backfilled from their key's owner.
+  ALTER TABLE executions ALTER COLUMN api_key_id DROP NOT NULL;
+  ALTER TABLE executions ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE CASCADE;
+  ALTER TABLE executions ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'api';
+  UPDATE executions e SET user_id = k.user_id FROM api_keys k WHERE e.user_id IS NULL AND k.id = e.api_key_id;
+  CREATE INDEX IF NOT EXISTS executions_time_idx ON executions (created_at);
+  CREATE INDEX IF NOT EXISTS executions_user_time_idx ON executions (user_id, created_at);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS last_sign_in_at TIMESTAMPTZ;
+  CREATE INDEX IF NOT EXISTS users_created_idx ON users (created_at);
 `;
 
 export async function initSchema(): Promise<void> {

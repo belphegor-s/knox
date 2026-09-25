@@ -15,9 +15,20 @@ export const OAUTH_STATE_COOKIE_NAME = "__Host-knox_oauth_state";
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
+// Who can see the admin overview: GitHub's numeric user ids, never logins - a login can be
+// renamed and then registered by someone else, an id can't. Comma-separated.
+const ADMIN_GITHUB_IDS = new Set(
+  (process.env.KNOX_ADMIN_GITHUB_IDS ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter((id) => /^\d+$/.test(id)),
+);
+
 export interface Account {
   userId: string;
   email: string;
+  githubId: string | null;
+  isAdmin: boolean;
   githubLogin: string | null;
   name: string | null;
   avatarUrl: string | null;
@@ -166,19 +177,36 @@ export async function createSession(userId: string): Promise<{ token: string; ex
   const token = randomToken();
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
   await pool.query("INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)", [hashToken(token), userId, expiresAt]);
+  await pool.query("UPDATE users SET last_sign_in_at = now() WHERE id = $1", [userId]);
   return { token, expiresAt };
 }
 
 export async function resolveSession(token: string | undefined): Promise<Account | null> {
   if (!token) return null;
-  const { rows } = await pool.query<{ user_id: string; email: string; github_login: string | null; name: string | null; avatar_url: string | null }>(
-    `SELECT s.user_id, u.email, u.github_login, u.name, u.avatar_url FROM sessions s
+  const { rows } = await pool.query<{
+    user_id: string;
+    email: string;
+    github_id: string | null;
+    github_login: string | null;
+    name: string | null;
+    avatar_url: string | null;
+  }>(
+    `SELECT s.user_id, u.email, u.github_id::text AS github_id, u.github_login, u.name, u.avatar_url FROM sessions s
      JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [hashToken(token)],
   );
   const row = rows[0];
-  return row ? { userId: row.user_id, email: row.email, githubLogin: row.github_login, name: row.name, avatarUrl: row.avatar_url } : null;
+  if (!row) return null;
+  return {
+    userId: row.user_id,
+    email: row.email,
+    githubId: row.github_id,
+    isAdmin: row.github_id != null && ADMIN_GITHUB_IDS.has(row.github_id),
+    githubLogin: row.github_login,
+    name: row.name,
+    avatarUrl: row.avatar_url,
+  };
 }
 
 export async function destroySession(token: string | undefined): Promise<void> {
