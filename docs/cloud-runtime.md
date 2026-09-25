@@ -1,7 +1,7 @@
 # Cloud runtime
 
-Cloud execution (Python/C/C++/Java/Go/Rust) and accounts (GitHub sign-in) are real and
-implemented. Sync and collaboration below are still spec-only - see each section for what that
+Cloud execution (Python/C/C++/Java/Go/Rust), accounts (GitHub sign-in), and usage tracking
+with an admin overview are real and implemented. Sync and collaboration below are still spec-only - see each section for what that
 means concretely.
 
 ## Cloud execution (implemented)
@@ -122,9 +122,43 @@ GitHub OAuth is the only sign-in method. `apps/api` owns accounts; everything el
 | `web` | `KNOX_REQUIRE_AUTH` | `true` |
 | `web` | `KNOX_SIGN_IN_URL` | `https://knox-api.procd.cc/auth/github` |
 
+| `api` | `KNOX_ADMIN_GITHUB_IDS` | Comma-separated GitHub numeric user ids allowed into the overview |
+
 The GitHub OAuth app (github.com/settings/developers, "OAuth Apps", not a GitHub App) needs the
 homepage URL `https://knox.procd.cc` and the callback URL
 `https://knox-api.procd.cc/auth/github/callback`, exactly.
+
+## Usage tracking and the admin overview (implemented)
+
+`knox.procd.cc/admin/` shows live and historical usage to the accounts listed in
+`KNOX_ADMIN_GITHUB_IDS`. The page is a static shell (`apps/web/admin/`); every number comes
+from two admin-only endpoints, and each service reports only its own database:
+
+- `apps/session-broker` - `GET /api/sessions/admin/overview` (same-origin via nginx's
+  `/api/sessions` route): sessions running now with time left and boot time, sessions and
+  real minutes spent (a running session counts up to now, not to its expiry) today / 7 days /
+  per day for 30 days, distinct people, the launch funnel, boot-time p50/p95, how sessions
+  ended, top users, recent sessions, and recent launch failures with their error.
+- `apps/api` - `GET /admin/overview` (credentialed CORS from knox.procd.cc): accounts and
+  signups, code runs from the API and from the in-browser IDE's `run` per day, exit-0 rate,
+  duration p50/p95, runs per language, most active users, active API keys.
+
+What's recorded to make that possible:
+
+- `session_events` (broker) - one row per "Open Knox" outcome: `requested`, `resumed`,
+  `limit_daily`, `limit_active`, `started` (with boot time), `failed` (with the error and how
+  long it took), `ended` (`expired` or `ended` by the user). Written best-effort: a failed
+  tracking write never fails a launch.
+- `sessions.boot_ms`, `sessions.end_reason`, `sessions.user_login` (broker). A container that
+  never becomes reachable is now stopped instead of left running with no row pointing at it.
+- `executions.user_id` and `executions.source` (`api` or `ide`) (api) - IDE runs through
+  `/api/execute` are logged too, with the exit code read off the NDJSON stream as it passes
+  through. Only `api` runs count toward the API's daily/monthly caps.
+
+All windows use the database clock (UTC): "today" starts at midnight UTC, "7 days" and
+"30 days" are rolling. Signed-in users also see their own VS Code minutes against the daily
+cap (and a link back into a running session) in the landing page's account menu, from
+`GET /api/sessions/me`.
 
 ## Why this is a separate document
 

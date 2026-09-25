@@ -84,6 +84,9 @@ services:
       # ".procd.cc" in production: one sign-in cookie for the landing page, this API, the
       # in-browser IDE, and every <sessionId>.procd.cc VS Code session.
       KNOX_COOKIE_DOMAIN: ${KNOX_COOKIE_DOMAIN:-}
+      # Who can open the admin overview (knox.procd.cc/admin/): GitHub numeric user ids,
+      # comma-separated - ids, not logins, since a login can be renamed and re-registered.
+      KNOX_ADMIN_GITHUB_IDS: ${KNOX_ADMIN_GITHUB_IDS:-}
     ports:
       - "8081:8081"
     restart: unless-stopped
