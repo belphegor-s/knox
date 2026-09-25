@@ -348,6 +348,39 @@
         color: var(--text-0);
         font-weight: 600;
       }
+      .account-usage {
+        padding: 6px 10px 10px;
+        margin-bottom: 4px;
+        border-bottom: 1px solid var(--border);
+      }
+      .account-usage-line {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 12.5px;
+        color: var(--text-2);
+        margin-bottom: 7px;
+        font-variant-numeric: tabular-nums;
+      }
+      .account-usage-line span:last-child {
+        color: var(--text-0);
+      }
+      .account-meter {
+        height: 5px;
+        border-radius: 3px;
+        background: var(--bg-3);
+        overflow: hidden;
+      }
+      .account-meter span {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: 3px;
+        background: var(--accent);
+      }
+      .account-menu [hidden] {
+        display: none;
+      }
       .account-menu a,
       .account-menu button {
         display: block;
@@ -1310,6 +1343,12 @@
           </summary>
           <div class="account-menu">
             <p class="account-who">Signed in as <strong id="nav-login"></strong></p>
+            <div class="account-usage" id="nav-usage" hidden>
+              <div class="account-usage-line"><span>VS Code today</span><span id="nav-usage-text"></span></div>
+              <div class="account-meter" role="img" id="nav-usage-meter"><span id="nav-usage-fill"></span></div>
+            </div>
+            <a href="#" id="nav-resume" hidden>Resume your session</a>
+            <a href="/admin/" id="nav-admin" hidden>Overview</a>
             <a href="https://knox-api.procd.cc/account">API keys and usage</a>
             <form method="POST" action="https://knox-api.procd.cc/auth/logout" id="nav-signout">
               <input type="hidden" name="redirect" id="nav-signout-redirect" />
@@ -1764,11 +1803,41 @@ curl https://knox-api.procd.cc/v1/execute \
               if (me.avatarUrl) avatar.src = me.avatarUrl + (me.avatarUrl.indexOf("?") === -1 ? "?" : "&") + "s=56";
               document.getElementById("nav-login").textContent = me.login ? "@" + me.login : me.email;
               navAccount.hidden = false;
+              document.getElementById("nav-admin").hidden = !me.isAdmin;
+              loadUsage();
             } else if (onHostedDemo) {
               navSignin.hidden = false;
             }
             return me;
           });
+
+        // Today's VS Code minutes against the daily cap, and a way back into a session that's
+        // still running - straight from session-broker (same-origin through nginx). Refreshed
+        // each time the menu opens, since a running session's minutes keep counting.
+        function loadUsage() {
+          fetch("/api/sessions/me", { credentials: "same-origin", cache: "no-store" })
+            .then(function (res) {
+              return res.ok ? res.json() : null;
+            })
+            .catch(function () {
+              return null;
+            })
+            .then(function (usage) {
+              if (!usage) return;
+              var used = Math.min(usage.usedTodayMinutes, usage.dailyCapMinutes);
+              var pct = Math.round((used / usage.dailyCapMinutes) * 100);
+              document.getElementById("nav-usage-text").textContent = Math.round(used) + " of " + usage.dailyCapMinutes + " min";
+              document.getElementById("nav-usage-fill").style.width = pct + "%";
+              document.getElementById("nav-usage-meter").setAttribute("aria-label", pct + "% of today's VS Code time used");
+              document.getElementById("nav-usage").hidden = false;
+              var resume = document.getElementById("nav-resume");
+              resume.hidden = !(usage.active && usage.active.url);
+              if (usage.active && usage.active.url) resume.href = usage.active.url;
+            });
+        }
+        navAccount.addEventListener("toggle", function () {
+          if (navAccount.open) loadUsage();
+        });
 
         document.addEventListener("click", function (evt) {
           if (navAccount.open && !navAccount.contains(evt.target)) navAccount.open = false;

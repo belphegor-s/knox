@@ -69,7 +69,12 @@ export default defineConfig({
     // apps/api (`pnpm dev:api`) if one happens to be up. Harmless when it isn't - requests
     // just fail to connect the same way they'd 502 in production with nothing deployed.
     proxy: {
+      // Most specific first. /api/sessions mirrors nginx's own route to a locally-running
+      // apps/session-broker (`pnpm dev:broker`); /__account stands in for knox-api.procd.cc,
+      // so the admin overview and account calls are same-origin in dev.
+      "/api/sessions": "http://localhost:8083",
       "/api": "http://localhost:8081",
+      "/__account": { target: "http://localhost:8081", rewrite: (path) => path.replace(/^\/__account/, "") },
     },
   },
   worker: {
@@ -86,6 +91,7 @@ export default defineConfig({
       input: {
         landing: fileURLToPath(new URL("index.html", import.meta.url)),
         app: fileURLToPath(new URL("app/index.html", import.meta.url)),
+        admin: fileURLToPath(new URL("admin/index.html", import.meta.url)),
       },
     },
   },
